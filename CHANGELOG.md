@@ -8,6 +8,16 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.7.1] - 04/06/2026
+
+### Added
+- `.github/workflows/release.yml` — Automated GitHub Release creation on `v*.*.*` tag push. Extracts the relevant CHANGELOG.md section as the release body. Future version tags will automatically appear under GitHub Releases with formatted notes.
+
+### Notes
+- Retroactive tags `v1.1.0` through `v1.7.0` are available under the **Tags** tab on GitHub. To promote them to full Releases with notes, open each tag on GitHub and click **Create release from tag** — the release workflow only applies to future tag pushes.
+
+---
+
 ## [1.7.0] - 04/06/2026
 
 ### Added
