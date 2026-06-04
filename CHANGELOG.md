@@ -8,6 +8,13 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.3.0] - 04/06/2026
+
+### Fixed
+- `.github/workflows/build-images.yml` — GHCR requires image tags to be fully lowercase. Removed static `IMAGE_PREFIX` env var (which preserved the mixed-case org name `Krafty-Sprouts-Media-LLC`) and replaced with a `Set lowercase image prefix` step that uses `tr '[:upper:]' '[:lower:]'` to produce `ghcr.io/krafty-sprouts-media-llc/dokploy-wp` at runtime before any build steps execute.
+
+---
+
 ## [1.2.0] - 04/06/2026
 
 ### Fixed
