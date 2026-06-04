@@ -194,9 +194,77 @@ Once enabled, WordPress will use Redis for object caching, significantly reducin
 
 ---
 
-## Updating Settings After Deployment
+## Updating the Stack
 
-All PHP, Nginx, Redis, and resource settings can be changed **without rebuilding** the images:
+### What a New Version Means
+
+When this repo releases a new version (e.g., `1.4.0` → `1.6.0`), the changes typically fall into one of three categories:
+
+| Change type | Example | Auto-applied on Redeploy? |
+|---|---|---|
+| Docker image update | Nginx config change, PHP version bump | ✅ Yes — `:latest` is pulled |
+| Compose file change | New service, new env var | ⚠️ Depends on deploy method |
+| Docs/template only | Guide updates, meta.json version | ✅ No container change needed |
+
+---
+
+### How Image Updates Work
+
+All images are tagged `:latest`. When GitHub Actions builds a new version, the `latest` tag in GHCR is overwritten. **Any Redeploy in Dokploy will pull the new image** for wordpress, nginx, and plugin-installer automatically.
+
+No action is required from you beyond clicking **Redeploy** in Dokploy.
+
+---
+
+### How Compose File Changes Reach You
+
+This depends on which deployment option you used:
+
+#### Option A (One-Click Template)
+
+The template was consumed at deploy time — Dokploy stored a snapshot of the compose YAML. **Changes to the compose file in this repo do NOT automatically update your running service.**
+
+To apply compose-level changes:
+1. In Dokploy, go to the service's **Compose** tab.
+2. Manually apply the relevant changes from the updated `docker-compose.yml` in this repo.
+3. Click **Redeploy**.
+
+#### Option B (Linked to GitHub Repo)
+
+Dokploy can fetch the latest compose from the repo. To update:
+1. In Dokploy, go to the service's **General** tab.
+2. Click **Pull** to fetch the latest `docker-compose.yml`.
+3. Click **Redeploy**.
+
+New or changed services, ports, and environment variable defaults will be applied.
+
+---
+
+### Your Data Is Always Safe
+
+Docker volumes (`wordpress_data`, `db_data`, `redis_data`) are **named and persistent**. A standard Redeploy never deletes volumes — only a manual `docker volume rm` would.
+
+> **Warning:** If the Compose project name changes (e.g., after a service rename in Dokploy), a redeploy may create new empty volumes. Always back up the database before a major update. See [phpMyAdmin — Common Tasks](#phpmyadmin--common-tasks) for export instructions.
+
+---
+
+### New Environment Variables in Updates
+
+When a new version adds environment variables:
+
+- **If the variable has a default** (e.g., `NEW_VAR=${NEW_VAR:-default_value}`), it applies automatically on Redeploy. No action needed.
+- **If the variable is required** (no default), you must add it manually:
+  1. Go to **Environment** tab in Dokploy.
+  2. Add the new variable and its value.
+  3. Click **Redeploy**.
+
+The CHANGELOG always documents which new variables were introduced and whether they have defaults.
+
+---
+
+### Updating Settings Without a Version Change
+
+All PHP, Nginx, Redis, and resource limit settings can be changed **at any time without rebuilding images**:
 
 1. Go to your Compose service in Dokploy.
 2. Navigate to the **Environment** tab.

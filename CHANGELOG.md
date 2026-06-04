@@ -8,6 +8,13 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.6.0] - 04/06/2026
+
+### Added
+- `docs/hosting-guide.md` — New **Updating the Stack** section replacing the brief settings-only note. Covers: version change categories (image vs compose vs docs), how `:latest` image pulls work on Redeploy, how compose changes reach Option A vs Option B deployments, data volume persistence guarantee, how to handle new required vs defaulted environment variables.
+
+---
+
 ## [1.5.0] - 04/06/2026
 
 ### Added
