@@ -65,15 +65,17 @@ done
 
 info "Waiting for plugin-installer to finish..."
 for i in $(seq 1 60); do
-	STATUS="$(${COMPOSE} ps plugin-installer --format json 2>/dev/null || echo "")"
-	if echo "${STATUS}" | grep -qi "exited"; then
-		EXIT_CODE="$(${COMPOSE} ps plugin-installer --format '{{.ExitCode}}' 2>/dev/null || echo "1")"
-		if [ "${EXIT_CODE}" = "0" ]; then
+	# Check container state — works across Docker Compose v2 versions
+	STATE="$(${COMPOSE} ps plugin-installer 2>/dev/null || echo "")"
+	if echo "${STATE}" | grep -qiE "Exited|exited"; then
+		# Container exited — verify success via log content
+		LOGS="$(${COMPOSE} logs plugin-installer 2>/dev/null || echo "")"
+		if echo "${LOGS}" | grep -q "installed successfully"; then
 			pass "Plugin installer completed successfully"
 			break
 		fi
-		${COMPOSE} logs plugin-installer
-		fail "Plugin installer exited with code ${EXIT_CODE}"
+		echo "${LOGS}"
+		fail "Plugin installer exited but plugins not confirmed installed"
 	fi
 	if [ "$i" -eq 60 ]; then
 		${COMPOSE} logs plugin-installer

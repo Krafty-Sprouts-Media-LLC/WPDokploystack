@@ -63,13 +63,18 @@ EXPECTED_DB_USER="${WORDPRESS_DB_USER:-wordpress}"
 EXPECTED_DB_NAME="${WORDPRESS_DB_NAME:-wordpress}"
 
 # ---------------------------------------------------------------------------
-# 2. WordPress core extract + wp-config creation (upstream entrypoint)
-#    Run setup without starting php-fpm. On fresh volumes the official
-#    entrypoint tar-extracts WordPress into /var/www/html — which would
-#    overwrite mu-plugins if we deployed them before this step.
+# 2. Ensure WordPress core files exist in volume (fresh install only)
+#    The official image ships WordPress in /usr/src/wordpress. On first boot
+#    it copies it into /var/www/html. We replicate that same copy here so
+#    mu-plugins bundled in /usr/src/wordpress/wp-content/mu-plugins/ land
+#    in the volume before php-fpm starts — no separate entrypoint call needed.
 # ---------------------------------------------------------------------------
-echo "[KSM] Running WordPress core setup (if needed)..."
-docker-entrypoint.sh /bin/true
+if [ ! -f "${WP_PATH}/wp-includes/version.php" ]; then
+    echo "[KSM] Fresh volume — copying WordPress core files..."
+    cp -a /usr/src/wordpress/. "${WP_PATH}/"
+    chown -R www-data:www-data "${WP_PATH}"
+    echo "[KSM] ✅ WordPress core copied (includes bundled mu-plugins)."
+fi
 
 # ---------------------------------------------------------------------------
 # 3. wp-config.php migration auto-fix (Layer 1)
@@ -116,7 +121,7 @@ if [ -f "${WP_CONFIG}" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Deploy KSM mu-plugins (Layer 2) — after WordPress core exists in volume
+# 4. Deploy KSM mu-plugins — always refresh from image bundle
 # ---------------------------------------------------------------------------
 MU_PLUGINS_DIR="${WP_PATH}/wp-content/mu-plugins"
 mkdir -p "${MU_PLUGINS_DIR}"
@@ -130,11 +135,9 @@ deploy_mu_plugin() {
     fi
 
     local dest="${MU_PLUGINS_DIR}/${dest_name}"
-    if [ ! -f "${dest}" ] || [ "${src}" -nt "${dest}" ]; then
-        cp "${src}" "${dest}"
-        chown www-data:www-data "${dest}"
-        echo "[KSM] ✅ ${dest_name} deployed to mu-plugins/."
-    fi
+    cp "${src}" "${dest}"
+    chown www-data:www-data "${dest}"
+    echo "[KSM] ✅ ${dest_name} deployed to mu-plugins/."
 }
 
 deploy_mu_plugin "/usr/local/lib/ksm/ksm-migration-fixer.php" "ksm-migration-fixer.php"

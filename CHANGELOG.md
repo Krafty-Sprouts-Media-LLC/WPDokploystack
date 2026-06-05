@@ -8,6 +8,14 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.8.8] - 05/06/2026
+
+### Fixed
+- `wordpress/docker-entrypoint-custom.sh` — Replaced broken `docker-entrypoint.sh /bin/true` approach with a direct `cp` of `/usr/src/wordpress` on fresh volumes. This reliably copies WordPress core (including bundled mu-plugins) without calling the upstream entrypoint twice.
+- `tests/smoke-test.sh` — Plugin installer wait loop now checks log content for success rather than relying on `--format '{{.ExitCode}}'` which varies across Docker Compose versions, fixing CI smoke test failures.
+
+---
+
 ## [1.8.7] - 04/06/2026
 
 ### Fixed
