@@ -114,9 +114,20 @@ if [ -f "${WP_CONFIG}" ]; then
 
         echo "[KSM] ✅ wp-config.php corrected successfully."
         echo ""
+        MIGRATION_DETECTED=1
     else
         echo "[KSM] wp-config.php DB_HOST looks correct (${CURRENT_DB_HOST:-not yet written})."
     fi
+
+    # URL constants from the source host override database values — remove them
+    # so WordPress uses siteurl/home from the migrated database (or fixer).
+    for constant in WP_HOME WP_SITEURL; do
+        if wp config has "${constant}" --path="${WP_PATH}" --allow-root 2>/dev/null; then
+            wp config delete "${constant}" --path="${WP_PATH}" --allow-root
+            echo "[KSM] ✅ Removed ${constant} from wp-config.php (stack uses database URLs)."
+            MIGRATION_DETECTED=1
+        fi
+    done
 
 fi
 
@@ -142,6 +153,21 @@ deploy_mu_plugin() {
 
 deploy_mu_plugin "/usr/local/lib/ksm/ksm-migration-fixer.php" "ksm-migration-fixer.php"
 deploy_mu_plugin "/usr/local/lib/ksm/ksm-cache-bootstrap.php" "ksm-cache-bootstrap.php"
+
+# ---------------------------------------------------------------------------
+# 4b. Auto-detect post-migration state and queue fixer on first HTTP request
+#     Marker is consumed once by ksm-migration-fixer.php.
+# ---------------------------------------------------------------------------
+MARKER_FILE="${WP_PATH}/ksm-migration-pending.txt"
+if [ -f "${WP_PATH}/migrategurupull.php" ] || [ -d "${WP_PATH}/mg_storage" ]; then
+    MIGRATION_DETECTED=1
+fi
+
+if [ "${MIGRATION_DETECTED:-0}" = "1" ] && [ ! -f "${MARKER_FILE}" ]; then
+    touch "${MARKER_FILE}"
+    chown www-data:www-data "${MARKER_FILE}"
+    echo "[KSM] ✅ Migration detected — ksm-migration-pending.txt marker created for fixer."
+fi
 
 # ---------------------------------------------------------------------------
 # 5. Start php-fpm via upstream WordPress entrypoint

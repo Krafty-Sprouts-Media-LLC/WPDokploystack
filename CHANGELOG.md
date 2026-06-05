@@ -8,6 +8,16 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.10.0] - 05/06/2026
+
+### Added
+- `wordpress/ksm-migration-fixer.php` — Post-migration cleanup v1.1.0: flush stale Redis before reading options; restore `active_plugins` and theme from database; deactivate third-party cache plugins (WP Rocket, LiteSpeed, W3TC, etc.); remove foreign `object-cache.php` / `advanced-cache.php` drop-ins; re-enable Redis Object Cache + MilliCache drop-ins.
+
+### Changed
+- `wordpress/docker-entrypoint-custom.sh` — Strip migrated `WP_HOME` / `WP_SITEURL` from wp-config; auto-create `ksm-migration-pending.txt` when migration artefacts or wp-config mismatch are detected.
+
+---
+
 ## [1.9.0] - 05/06/2026
 
 ### Fixed
