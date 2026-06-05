@@ -3,6 +3,13 @@ name: Build and Push Docker Images
 on:
   push:
     branches: [main]
+    paths:
+      - 'wordpress/**'
+      - 'nginx/**'
+      - 'plugin-installer/**'
+      - 'docker-compose.yml'
+      - 'blueprints/**/docker-compose.yml'
+      - '.github/workflows/build-images.yml'
   workflow_dispatch:
 
 env:

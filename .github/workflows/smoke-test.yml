@@ -11,8 +11,24 @@ name: Stack Smoke Test
 on:
   push:
     branches: [main]
+    paths:
+      - 'wordpress/**'
+      - 'nginx/**'
+      - 'plugin-installer/**'
+      - 'docker-compose.yml'
+      - 'blueprints/**/docker-compose.yml'
+      - 'tests/**'
+      - '.github/workflows/smoke-test.yml'
   pull_request:
     branches: [main]
+    paths:
+      - 'wordpress/**'
+      - 'nginx/**'
+      - 'plugin-installer/**'
+      - 'docker-compose.yml'
+      - 'blueprints/**/docker-compose.yml'
+      - 'tests/**'
+      - '.github/workflows/smoke-test.yml'
   workflow_dispatch:
 
 jobs:

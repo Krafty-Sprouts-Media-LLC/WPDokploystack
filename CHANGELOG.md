@@ -8,6 +8,13 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.8.5] - 04/06/2026
+
+### Changed
+- `.github/workflows/build-images.yml` and `.github/workflows/smoke-test.yml` — Added path filters so docs-only commits skip image rebuilds and the integration smoke test.
+
+---
+
 ## [1.8.4] - 04/06/2026
 
 ### Changed
