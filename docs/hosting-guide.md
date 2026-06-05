@@ -78,8 +78,8 @@ The stack is available at: **https://github.com/Krafty-Sprouts-Media-LLC/WPDokpl
    https://raw.githubusercontent.com/Krafty-Sprouts-Media-LLC/WPDokploystack/main
    ```
 6. Find and select **"KSM WordPress Stack"**.
-7. Click **Create** and then **Confirm**. Dokploy does **not** ask for `STACK_SLUG` in a wizard — it auto-fills `STACK_SLUG` from Dokploy's internal `APP_NAME` (project name + template id + random suffix).
-8. **(Optional, before first Deploy)** Open **Environment** and set `STACK_SLUG=mysite` if you want short volume names (`mysite_data`, etc.) instead of the longer auto value.
+7. Click **Create** and then **Confirm**.
+8. Open **Environment** — `STACK_SLUG` is already set to the service ID under the stack name (e.g. `mysite-ksmwpstack-8zv3p5`, same string as on the **General** tab). **Before first Deploy**, replace it with your short project name (e.g. `STACK_SLUG=mysite`) so host volumes are `mysite_data`, `mysite_db_data`, `mysite_redis_data`.
 9. Click **Deploy** once ready.
 
 ### Option B: Manual Compose Deploy
@@ -151,30 +151,28 @@ Both layers use the same `redis` container. MilliCache connects via `MC_STORAGE_
 
 ### Stack Naming
 
-Dokploy does **not** ask for `STACK_SLUG` during template setup. For short volume names (e.g. `mysite_data` instead of a long auto-generated name):
+On template **Create**, Dokploy pre-fills **Environment** with `STACK_SLUG` equal to the service ID shown under the stack name on the **General** tab (e.g. `mysite-ksmwpstack-8zv3p5`). There is no separate wizard field — check **Environment** after create.
 
-1. **Create** the service from the template — **do not Deploy yet**
-2. Open **Environment**
-3. Add or change: `STACK_SLUG=mysite`
+**Replace before first Deploy** (recommended):
+
+1. **Create** the service — **do not Deploy yet**
+2. Open **Environment** — note the pre-filled value, e.g. `STACK_SLUG=mysite-ksmwpstack-8zv3p5`
+3. **Replace** with your short project slug, e.g. `STACK_SLUG=mysite`
 4. Click **Deploy** (first deploy only)
 
 | Variable      | Default                                      | Description |
 |---------------|----------------------------------------------|-------------|
-| `STACK_SLUG`  | Template: Dokploy `APP_NAME` (auto). Manual compose: `COMPOSE_PROJECT_NAME` if unset | Creates `{slug}_data`, `{slug}_db_data`, `{slug}_redis_data`. Use the steps above to override with a short prefix. |
+| `STACK_SLUG`  | Pre-filled service ID (template). Manual compose: `COMPOSE_PROJECT_NAME` if unset | Volume prefix: `{STACK_SLUG}_data`, `{STACK_SLUG}_db_data`, `{STACK_SLUG}_redis_data`. |
 
 > **Important:** Changing `STACK_SLUG` after the first deploy does **not** rename existing volumes. Docker creates new empty volumes under the new name. Your site data remains in the old volumes until you migrate manually.
 
-On the VPS, WordPress files live at:
-
-```
-/var/lib/docker/volumes/<stack-slug>_data/_data/
-```
-
-Example with `STACK_SLUG=mysite`:
+On the VPS (WinSCP/SSH), you will see volume **folders** like `/var/lib/docker/volumes/mysite_data/`. WordPress files are in the **`_data` subfolder** inside that volume:
 
 ```
 /var/lib/docker/volumes/mysite_data/_data/
 ```
+
+That inner `_data` path is the site root (`wp-admin`, `wp-content`, `wp-includes`). Do not edit files only at `/var/lib/docker/volumes/mysite_data/` without the `_data` suffix.
 
 ### Database Configuration
 

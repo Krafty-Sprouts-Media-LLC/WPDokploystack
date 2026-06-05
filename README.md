@@ -31,8 +31,8 @@ Pick one of the two deploy methods below, then follow the shared **Post-Deploy S
    https://raw.githubusercontent.com/Krafty-Sprouts-Media-LLC/WPDokploystack/main
    ```
 6. You will find **"KSM WordPress Stack"**
-7. Click **Create** and **Confirm** — Dokploy does **not** show a separate `STACK_SLUG` prompt
-8. **(Optional, before first Deploy)** Open **Environment** and set `STACK_SLUG=mysite` (or your short site name) if you want volumes like `mysite_data` instead of the auto-generated `APP_NAME` value
+7. Click **Create** and **Confirm**
+8. Open **Environment** — `STACK_SLUG` is **already set** to the service ID shown under the stack name (e.g. `mysite-ksmwpstack-8zv3p5`). **Before first Deploy**, replace it with your short project name (e.g. `STACK_SLUG=mysite`) so volumes are `mysite_data`, not `mysite-ksmwpstack-8zv3p5_data`
 9. Click **Deploy**
 
 ### Option B: Manual Compose Deploy
@@ -90,13 +90,13 @@ For browser verification, add `define('MC_CACHE_DEBUG', true);` to wp-config (or
 
 ### 4. Accessing WordPress files (Optional)
 
-WordPress files live in a Docker volume on the VPS, e.g.:
+WordPress files live in a Docker volume on the VPS. In WinSCP you may see the volume folder first; the site root is the **`_data` subfolder inside it**:
 
 ```
 /var/lib/docker/volumes/<stack-slug>_data/_data/
 ```
 
-With `STACK_SLUG=mysite`, that path is `/var/lib/docker/volumes/mysite_data/_data/`.
+With `STACK_SLUG=mysite`, browse to `/var/lib/docker/volumes/mysite_data/_data/` — that inner `_data` folder contains `wp-admin`, `wp-content`, `wp-includes`, etc. The volume folder `mysite_data` alone is not the WordPress root.
 
 Use WinSCP/SSH to the VPS (port 22) and browse there. An optional **SFTP container** is also available — enable with `COMPOSE_PROFILES=tools` in Dokploy Environment. See [docs/sftp-setup.md](docs/sftp-setup.md).
 
@@ -104,16 +104,25 @@ Use WinSCP/SSH to the VPS (port 22) and browse there. An optional **SFTP contain
 
 ### Stack Naming
 
-Dokploy does **not** show a `STACK_SLUG` wizard step. The template auto-sets it from Dokploy's `APP_NAME` (longer name). For short volume names like `mysite_data`, set it yourself **before the first Deploy**:
+After **Create**, Dokploy pre-fills **Environment** with `STACK_SLUG` matching the service ID under the stack name (e.g. `mysite-ksmwpstack-8zv3p5`). That value becomes your Docker volume prefix if you deploy as-is.
+
+**Before first Deploy**, replace it with a short name (usually your Dokploy **project** name):
 
 1. **Create** the service from the template — **do not Deploy yet**
-2. Open **Environment**
-3. Add or change: `STACK_SLUG=mysite`
+2. Open **Environment** — you will see e.g. `STACK_SLUG=mysite-ksmwpstack-8zv3p5`
+3. **Replace** with `STACK_SLUG=mysite`
 4. Click **Deploy** (first deploy only — changing `STACK_SLUG` later creates new empty volumes)
+
+Result on the VPS:
+
+| `STACK_SLUG` | Docker volumes |
+|--------------|----------------|
+| `mysite` (short — recommended) | `mysite_data`, `mysite_db_data`, `mysite_redis_data` |
+| `mysite-ksmwpstack-8zv3p5` (left as-is) | `mysite-ksmwpstack-8zv3p5_data`, etc. |
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `STACK_SLUG` | Template: Dokploy `APP_NAME` (auto). Manual compose: unset → `COMPOSE_PROJECT_NAME` | Short name for Docker volumes. Override using the steps above for a clean prefix (e.g. `mysite_data`). |
+| `STACK_SLUG` | Pre-filled service ID on template create. Manual compose: unset → `COMPOSE_PROJECT_NAME` | Docker volume prefix. Replace the auto value before first Deploy for short paths. |
 
 ### Database Configuration
 

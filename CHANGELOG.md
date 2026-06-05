@@ -8,6 +8,13 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.8.6] - 04/06/2026
+
+### Changed
+- `README.md`, `docs/hosting-guide.md`, `docs/sftp-setup.md` — Document real Dokploy behaviour: `STACK_SLUG` is pre-filled in Environment after template Create (matches service ID under stack name); replace with short project slug before first Deploy. Clarify WordPress files live in `.../<slug>_data/_data/`, not the volume folder root alone.
+
+---
+
 ## [1.8.5] - 04/06/2026
 
 ### Changed

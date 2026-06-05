@@ -12,21 +12,23 @@ Connect WinSCP (or SSH) to your **VPS on port 22** with your server login. WordP
 /var/lib/docker/volumes/<stack-slug>_data/_data/
 ```
 
-**With `STACK_SLUG` set before deploy** (recommended):
+**After replacing the pre-filled `STACK_SLUG` before first Deploy** (recommended):
+
+Dokploy sets `STACK_SLUG=mysite-ksmwpstack-8zv3p5` on create (same as the ID under the stack name). Replace with `STACK_SLUG=mysite` before Deploy, then files are at:
 
 ```
 /var/lib/docker/volumes/mysite_data/_data/
 ```
 
-**Without `STACK_SLUG`** (Dokploy auto-generated project name — longer):
+**If you leave the pre-filled value**, volumes use that long prefix:
 
 ```
-/var/lib/docker/volumes/mysite-ksm-wp-stack-abc123_data/_data/
+/var/lib/docker/volumes/mysite-ksmwpstack-8zv3p5_data/_data/
 ```
 
-That `_data` folder **is** the site root — `wp-admin`, `wp-content`, `wp-includes`, etc.
+In WinSCP you may browse to `/var/lib/docker/volumes/mysite_data/` first — open the **`_data` subfolder** for the WordPress root (`wp-admin`, `wp-content`, `wp-includes`).
 
-> Set `STACK_SLUG=mysite` (or your short site name) in Dokploy **Environment before the first deploy** to get predictable volume paths. See [README](../README.md#stack-naming).
+> After **Create**, open **Environment**, **replace** the auto `STACK_SLUG` with your short project name, then **Deploy**. See [README](../README.md#stack-naming).
 
 Related volumes for the same project:
 
