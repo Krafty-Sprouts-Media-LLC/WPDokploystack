@@ -15,18 +15,18 @@ Connect WinSCP (or SSH) to your **VPS on port 22** with your server login. WordP
 **With `STACK_SLUG` set before deploy** (recommended):
 
 ```
-/var/lib/docker/volumes/plantnimals_data/_data/
+/var/lib/docker/volumes/mysite_data/_data/
 ```
 
 **Without `STACK_SLUG`** (Dokploy auto-generated project name — longer):
 
 ```
-/var/lib/docker/volumes/plantnimals-wordpressredisstack-nkkjca_data/_data/
+/var/lib/docker/volumes/mysite-ksm-wp-stack-abc123_data/_data/
 ```
 
 That `_data` folder **is** the site root — `wp-admin`, `wp-content`, `wp-includes`, etc.
 
-> Set `STACK_SLUG=plantnimals` (or your short site name) in Dokploy **Environment before the first deploy** to get predictable volume paths. See [README](../README.md#stack-naming).
+> Set `STACK_SLUG=mysite` (or your short site name) in Dokploy **Environment before the first deploy** to get predictable volume paths. See [README](../README.md#stack-naming).
 
 Related volumes for the same project:
 

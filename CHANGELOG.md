@@ -8,6 +8,13 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.8.4] - 04/06/2026
+
+### Changed
+- `README.md`, `docs/hosting-guide.md`, `docs/sftp-setup.md`, `docs/filebrowser-setup.md` — Replaced real site name in `STACK_SLUG` examples with generic `mysite` placeholder.
+
+---
+
 ## [1.8.3] - 04/06/2026
 
 ### Fixed

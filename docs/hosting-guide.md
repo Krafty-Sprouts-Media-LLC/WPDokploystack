@@ -79,7 +79,7 @@ The stack is available at: **https://github.com/Krafty-Sprouts-Media-LLC/WPDokpl
    ```
 6. Find and select **"KSM WordPress Stack"**.
 7. Click **Create** and then **Confirm**. Dokploy does **not** ask for `STACK_SLUG` in a wizard — it auto-fills `STACK_SLUG` from Dokploy's internal `APP_NAME` (project name + template id + random suffix).
-8. **(Optional, before first Deploy)** Open **Environment** and set `STACK_SLUG=plantnimals` if you want short volume names (`plantnimals_data`, etc.) instead of the longer auto value.
+8. **(Optional, before first Deploy)** Open **Environment** and set `STACK_SLUG=mysite` if you want short volume names (`mysite_data`, etc.) instead of the longer auto value.
 9. Click **Deploy** once ready.
 
 ### Option B: Manual Compose Deploy
@@ -94,7 +94,7 @@ The stack is available at: **https://github.com/Krafty-Sprouts-Media-LLC/WPDokpl
    MYSQL_PASSWORD=YourSecureDbPass456!
    WORDPRESS_DB_PASSWORD=YourSecureDbPass456!
    ```
-   Set `STACK_SLUG` to a short identifier (e.g. `plantnimals`) **before the first deploy**.
+   Set `STACK_SLUG` to a short identifier (e.g. `mysite`) **before the first deploy**.
 5. Click **Deploy**.
 
 ---
@@ -151,11 +151,11 @@ Both layers use the same `redis` container. MilliCache connects via `MC_STORAGE_
 
 ### Stack Naming
 
-Dokploy does **not** ask for `STACK_SLUG` during template setup. For short volume names (e.g. `plantnimals_data` instead of a long auto-generated name):
+Dokploy does **not** ask for `STACK_SLUG` during template setup. For short volume names (e.g. `mysite_data` instead of a long auto-generated name):
 
 1. **Create** the service from the template — **do not Deploy yet**
 2. Open **Environment**
-3. Add or change: `STACK_SLUG=plantnimals`
+3. Add or change: `STACK_SLUG=mysite`
 4. Click **Deploy** (first deploy only)
 
 | Variable      | Default                                      | Description |
@@ -170,10 +170,10 @@ On the VPS, WordPress files live at:
 /var/lib/docker/volumes/<stack-slug>_data/_data/
 ```
 
-Example with `STACK_SLUG=plantnimals`:
+Example with `STACK_SLUG=mysite`:
 
 ```
-/var/lib/docker/volumes/plantnimals_data/_data/
+/var/lib/docker/volumes/mysite_data/_data/
 ```
 
 ### Database Configuration
@@ -480,10 +480,10 @@ FLUSH PRIVILEGES;
 Set `STACK_SLUG` to a short site identifier **before the first deploy**:
 
 ```env
-STACK_SLUG=plantnimals
+STACK_SLUG=mysite
 ```
 
-Volumes become `plantnimals_data`, `plantnimals_db_data`, `plantnimals_redis_data`.
+Volumes become `mysite_data`, `mysite_db_data`, `mysite_redis_data`.
 
 ### What changing `STACK_SLUG` later does
 

@@ -15,7 +15,7 @@ The WordPress volume is named `{STACK_SLUG}_data` when `STACK_SLUG` is set, othe
 2. Or run on your server: `docker volume ls | grep _data`
 
 Examples:
-- `STACK_SLUG=plantnimals` → volume `plantnimals_data`
+- `STACK_SLUG=mysite` → volume `mysite_data`
 - No `STACK_SLUG` → volume may be `mysite-wordpressredisstack-abc123_data`
 
 ## Deploy FileBrowser
