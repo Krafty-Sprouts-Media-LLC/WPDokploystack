@@ -5,11 +5,13 @@
 #
 # Responsibilities:
 #   1. Apply PHP/OPcache settings from environment variables
-#   2. Auto-correct wp-config.php if overwritten by a migration tool
+#   2. Ensure WordPress core files exist in volume (fresh installs)
+#   3. Auto-correct wp-config.php if overwritten by a migration tool
 #      (e.g. Migrate Guru) with host-specific values that don't match
 #      this Docker stack's internal network configuration
-#   3. Run upstream WordPress core extract / wp-config creation (fresh volumes)
-#   4. Auto-correct wp-config.php after core exists
+#   4. Enforce DISABLE_WP_CRON=true in wp-config.php via WP-CLI
+#      (WORDPRESS_CONFIG_EXTRA only runs on fresh installs; this ensures
+#       existing installs also get the constant on every container start)
 #   5. Deploy KSM mu-plugins after core exists (avoids fresh-install wipe by tar extract)
 #   6. Start php-fpm via upstream entrypoint
 #      (Cache plugin activation runs via ksm-cache-bootstrap mu-plugin on first HTTP request.)
@@ -132,7 +134,23 @@ if [ -f "${WP_CONFIG}" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 4. Deploy KSM mu-plugins — always refresh from image bundle
+# 4. Enforce DISABLE_WP_CRON constant in wp-config.php
+#    WORDPRESS_CONFIG_EXTRA only writes constants on a fresh install.
+#    To guarantee DISABLE_WP_CRON=true on all installs (new and existing),
+#    we set it explicitly via WP-CLI on every container start.
+#    Idempotent — safe to run on every boot.
+# ---------------------------------------------------------------------------
+if [ -f "${WP_CONFIG}" ]; then
+    if ! wp config has DISABLE_WP_CRON --path="${WP_PATH}" --allow-root 2>/dev/null; then
+        wp config set DISABLE_WP_CRON true --path="${WP_PATH}" --allow-root --raw
+        echo "[KSM] ✅ DISABLE_WP_CRON set in wp-config.php (WP-Cron sidecar manages scheduling)."
+    else
+        echo "[KSM] DISABLE_WP_CRON already present in wp-config.php."
+    fi
+fi
+
+# ---------------------------------------------------------------------------
+# 5. Deploy KSM mu-plugins — always refresh from image bundle
 # ---------------------------------------------------------------------------
 MU_PLUGINS_DIR="${WP_PATH}/wp-content/mu-plugins"
 mkdir -p "${MU_PLUGINS_DIR}"
@@ -155,7 +173,7 @@ deploy_mu_plugin "/usr/local/lib/ksm/ksm-migration-fixer.php" "ksm-migration-fix
 deploy_mu_plugin "/usr/local/lib/ksm/ksm-cache-bootstrap.php" "ksm-cache-bootstrap.php"
 
 # ---------------------------------------------------------------------------
-# 4b. Auto-detect post-migration state and queue fixer on first HTTP request
+# 5a. Auto-detect post-migration state and queue fixer on first HTTP request
 #     Marker is consumed once by ksm-migration-fixer.php.
 # ---------------------------------------------------------------------------
 MARKER_FILE="${WP_PATH}/ksm-migration-pending.txt"
@@ -171,6 +189,6 @@ if [ "${MIGRATION_DETECTED:-0}" = "1" ] && [ ! -f "${MARKER_FILE}" ]; then
 fi
 
 # ---------------------------------------------------------------------------
-# 5. Start php-fpm via upstream WordPress entrypoint
+# 6. Start php-fpm via upstream WordPress entrypoint
 # ---------------------------------------------------------------------------
 exec docker-entrypoint.sh "$@"

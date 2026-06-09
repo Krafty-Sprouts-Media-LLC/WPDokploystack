@@ -8,6 +8,14 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.13.2] - 09/06/2026
+
+### Fixed
+- **`DISABLE_WP_CRON` not applied to existing installs** — `WORDPRESS_CONFIG_EXTRA` is only written to `wp-config.php` by the official WordPress Docker image on a fresh volume (first boot). Existing installs with an existing `wp-config.php` on the volume never received the constant, leaving WordPress's pseudo-cron still firing on page load despite the sidecar running.
+- `wordpress/docker-entrypoint-custom.sh` v1.13.2 — Added step 4: on every container start, checks for `DISABLE_WP_CRON` via `wp config has` and surgically sets it via `wp config set --raw` if missing. Idempotent — only acts when the constant is absent; all other wp-config.php content is untouched.
+
+---
+
 ## [1.13.1] - 09/06/2026
 
 ### Fixed
