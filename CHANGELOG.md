@@ -8,6 +8,16 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.13.4] - 09/06/2026
+
+### Fixed
+- **CI build failing on blueprint tag update** — The `sed` step added in v1.13.3 used `|` as the substitution delimiter while the ERE alternation `(nginx|wordpress|plugin-installer)` also contains pipe characters. GNU sed treated the first inner `|` as the end of the pattern, causing `unknown option to 's'` and aborting the workflow before images were pushed or blueprint tags were committed. Delimiter changed to `#`.
+
+### Changed
+- `blueprints/ksm-wp-stack/docker-compose.yml` — Image tags bumped to `1.13.4`.
+
+---
+
 ## [1.13.3] - 09/06/2026
 
 ### Fixed
