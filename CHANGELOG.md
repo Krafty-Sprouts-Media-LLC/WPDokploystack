@@ -8,6 +8,17 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.13.3] - 09/06/2026
+
+### Fixed
+- **Blueprint image tags out of sync** — `blueprints/ksm-wp-stack/docker-compose.yml` was still pinned to `1.12.0` images after the `1.13.x` releases, meaning Dokploy deployments pulled the old WordPress image without the entrypoint fixes. Tags updated to `1.13.2` (current release).
+
+### Changed
+- `.github/workflows/build-images.yml` — Added two steps after the plugin-installer build: (1) `sed` replaces all three custom image tags in the blueprint compose with the current `meta.json` version, (2) `stefanzweifel/git-auto-commit-action` commits the change back to the repo with `[skip ci]` so it doesn't trigger a recursive build loop. Blueprint image tags will now always stay in sync automatically on every CI build.
+- `blueprints/ksm-wp-stack/docker-compose.yml` — Image tags bumped from `1.12.0` → `1.13.3` for nginx, wordpress, and plugin-installer. From this release, the CI auto-update step keeps blueprint tags permanently in sync with `meta.json` on every build.
+
+---
+
 ## [1.13.2] - 09/06/2026
 
 ### Fixed

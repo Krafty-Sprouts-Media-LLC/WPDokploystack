@@ -86,3 +86,20 @@ jobs:
             ${{ env.IMAGE_PREFIX }}-plugin-installer:latest
             ${{ env.IMAGE_PREFIX }}-plugin-installer:${{ steps.version.outputs.version }}
           provenance: false
+
+      - name: Update blueprint image tags to current version
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          BLUEPRINT="blueprints/ksm-wp-stack/docker-compose.yml"
+          # Replace any existing version tag (x.y.z) on the three custom images
+          sed -i -E \
+            "s|(ghcr\.io/krafty-sprouts-media-llc/dokploy-wp-(nginx|wordpress|plugin-installer)):[0-9]+\.[0-9]+\.[0-9]+|\1:${VERSION}|g" \
+            "${BLUEPRINT}"
+          echo "Blueprint image tags updated to ${VERSION}:"
+          grep "ghcr.io/krafty-sprouts-media-llc" "${BLUEPRINT}"
+
+      - name: Commit updated blueprint image tags
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore: update blueprint image tags to ${{ steps.version.outputs.version }} [skip ci]"
+          file_pattern: blueprints/ksm-wp-stack/docker-compose.yml
