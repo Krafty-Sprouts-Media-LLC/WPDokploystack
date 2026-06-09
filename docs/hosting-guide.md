@@ -358,16 +358,16 @@ The CHANGELOG always documents which new variables were introduced and whether t
 
 ---
 
-### Upgrading to v1.13.0 — Existing Installs
+### Upgrading to v1.13.x — Existing Installs
 
-v1.13.0 adds the **WP-Cron sidecar** and `DISABLE_WP_CRON=true` to wp-config. Here is what existing deployments need to do:
+v1.13.0 added the **WP-Cron sidecar**. v1.13.2 ensured `DISABLE_WP_CRON=true` is enforced via the entrypoint on every container start (new and existing installs alike). Here is what existing deployments need to do:
 
 #### What changes automatically on Redeploy
 
 | Change | Auto-applied? | Notes |
 |--------|:---:|-------|
 | `wp-cron` service starts | ✅ Yes (Option B) / ⚠️ Manual (Option A) | New service; must exist in your compose |
-| `DISABLE_WP_CRON=true` in wp-config | ✅ Yes | Written via `WORDPRESS_CONFIG_EXTRA` on container restart |
+| `DISABLE_WP_CRON=true` in wp-config | ✅ Yes — v1.13.2+ | Set by entrypoint via WP-CLI on every container start. No manual action needed. |
 | `WP_CRON_INTERVAL` env var | ✅ Default `300` | No action needed unless you want a different interval |
 
 #### Option A (One-Click Template) — Manual compose edit required
@@ -383,17 +383,19 @@ Your compose snapshot does not have the `wp-cron` service. Add it manually:
   # ---------------------------------------------------------------------------
   wp-cron:
     image: alpine:latest
-    command: >
-      sh -c "
-        echo 'WP-Cron sidecar started. Interval: 300s';
+    command:
+      - /bin/sh
+      - -c
+      - |
+        echo 'WP-Cron sidecar started. Interval: 300s'
         while true; do
-          wget -q -O - 'http://nginx/wp-cron.php?doing_wp_cron' > /dev/null 2>&1
-            && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] wp-cron triggered\"
-            || echo \"[$(date '+%Y-%m-%d %H:%M:%S')] wp-cron request failed\"
-          ;
-          sleep ${WP_CRON_INTERVAL:-300};
+          if wget -q -O /dev/null 'http://nginx/wp-cron.php?doing_wp_cron' 2>&1; then
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] wp-cron triggered"
+          else
+            echo "[$(date '+%Y-%m-%d %H:%M:%S')] wp-cron request failed"
+          fi
+          sleep "${WP_CRON_INTERVAL:-300}"
         done
-      "
     depends_on:
       nginx:
         condition: service_healthy
@@ -402,15 +404,16 @@ Your compose snapshot does not have the `wp-cron` service. Add it manually:
     restart: unless-stopped
 ```
 
-3. Also add `define('DISABLE_WP_CRON', true);` to your `WORDPRESS_CONFIG_EXTRA` environment variable block.
-4. Click **Redeploy**.
+3. Click **Redeploy**.
+
+> **`DISABLE_WP_CRON` is handled automatically** — the WordPress entrypoint (v1.13.2+) sets it in `wp-config.php` via WP-CLI on every container start. You do not need to add it manually to `WORDPRESS_CONFIG_EXTRA`.
 
 #### Option B (GitHub-linked) — Pull and Redeploy
 
 1. In Dokploy → **General** tab → click **Pull**.
 2. Click **Redeploy**.
 
-The `wp-cron` service and `DISABLE_WP_CRON` constant are both picked up automatically.
+The `wp-cron` service, updated compose, and `DISABLE_WP_CRON` enforcement are all picked up automatically.
 
 #### Is there any risk?
 

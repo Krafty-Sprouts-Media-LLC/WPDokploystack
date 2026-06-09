@@ -14,6 +14,7 @@ Forked and extended from [itsmereal/dokploy-wp](https://github.com/itsmereal/dok
 | **Redis** | Shared store for object cache (DB 0) and MilliCache full-page cache (DB 1) |
 | **phpMyAdmin** | Database administration interface |
 | **Plugin Installer** | Automatically installs Redis Object Cache and MilliCache plugins |
+| **WP-Cron** | Alpine sidecar — triggers `wp-cron.php` every 5 min via internal Docker network. Ensures scheduled events run regardless of traffic. |
 | **SFTP** (optional) | Separate SFTP container — enable with `COMPOSE_PROFILES=tools` |
 
 ## Quick Start
@@ -169,6 +170,12 @@ Result on the VPS:
 | `REDIS_MAXMEMORY` | 512mb | Redis maximum memory |
 | `REDIS_MAXMEMORY_POLICY` | allkeys-lru | Eviction policy |
 
+### WP-Cron Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WP_CRON_INTERVAL` | `300` | Seconds between each `wp-cron.php` trigger (default: 5 minutes). `DISABLE_WP_CRON=true` is set automatically in `wp-config.php` by the entrypoint — the sidecar is the sole scheduler. |
+
 ### Resource Limits (No Rebuild Required)
 
 | Variable | Default | Description |
@@ -218,6 +225,8 @@ docker exec -it <wordpress-container-name> bash
 wp plugin list
 wp cache flush
 wp core update
+wp cron event list --allow-root
+wp cron event run --due-now --allow-root
 ```
 
 ## Volumes
@@ -267,6 +276,14 @@ NGINX_CLIENT_MAX_BODY_SIZE=512M
 2. Run `wp millicache drop` inside the WordPress container
 3. Check `wp millicache status` — `advanced_cache` should show `symlink` or `file`
 4. Do not install other page-cache plugins (WP Super Cache, W3 Total Cache, etc.) — they conflict on `advanced-cache.php`
+
+### WP-Cron not running / scheduled events delayed
+
+1. In Dokploy → **Logs** → select the `wp-cron` container — you should see `[timestamp] wp-cron triggered` every 5 minutes
+2. If you see `wp-cron request failed`, nginx may still be starting — it retries automatically
+3. Verify `DISABLE_WP_CRON` is in wp-config: `grep DISABLE_WP_CRON /var/www/html/wp-config.php` inside the WordPress container
+4. Check WordPress container startup logs for `[KSM] ✅ DISABLE_WP_CRON set in wp-config.php`
+5. To manually trigger all due events: `wp cron event run --due-now --allow-root`
 
 ## Smoke Testing
 
