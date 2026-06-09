@@ -37,6 +37,7 @@ services:
           define('MC_STORAGE_HOST', 'redis');
           define('MC_STORAGE_PORT', 6379);
           define('MC_STORAGE_DB', 1);
+          define('DISABLE_WP_CRON', true);
       - PHP_UPLOAD_MAX_FILESIZE=${PHP_UPLOAD_MAX_FILESIZE:-256M}
       - PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-256M}
       - PHP_MEMORY_LIMIT=${PHP_MEMORY_LIMIT:-256M}
@@ -129,6 +130,33 @@ services:
       timeout: 10s
       retries: 3
       start_period: 10s
+    restart: unless-stopped
+
+  # ---------------------------------------------------------------------------
+  # WP-Cron sidecar — always-on. Triggers wp-cron.php every 5 minutes via
+  # the internal Docker network so WP scheduled events run reliably without
+  # relying on visitor traffic or exposing an external HTTP endpoint.
+  # DISABLE_WP_CRON=true in wp-config prevents WordPress from spawning its
+  # own pseudo-cron on page load, avoiding duplicate runs.
+  # ---------------------------------------------------------------------------
+  wp-cron:
+    image: alpine:latest
+    command: >
+      sh -c "
+        echo 'WP-Cron sidecar started. Interval: 300s';
+        while true; do
+          wget -q -O - 'http://nginx/wp-cron.php?doing_wp_cron' > /dev/null 2>&1
+            && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] wp-cron triggered\"
+            || echo \"[$(date '+%Y-%m-%d %H:%M:%S')] wp-cron request failed (nginx may still be starting)\"
+          ;
+          sleep ${WP_CRON_INTERVAL:-300};
+        done
+      "
+    depends_on:
+      nginx:
+        condition: service_healthy
+    networks:
+      - internal
     restart: unless-stopped
 
   sftp:

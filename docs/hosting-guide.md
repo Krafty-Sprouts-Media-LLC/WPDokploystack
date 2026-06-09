@@ -59,6 +59,7 @@ Rather than using Dokploy's built-in official WordPress template (which can surf
 | **Redis**          | Shared Redis for object cache (DB 0) and MilliCache full-page cache (DB 1) |
 | **phpMyAdmin**     | Database administration interface                        |
 | **Plugin Installer** | Automatically installs Redis Object Cache and MilliCache |
+| **WP-Cron**        | Alpine sidecar that triggers `wp-cron.php` every 5 min via the internal Docker network. Eliminates reliance on visitor traffic for scheduled tasks. |
 | **SFTP** (optional) | Separate SFTP container — enable with `COMPOSE_PROFILES=tools` |
 
 The stack is available at: **https://github.com/Krafty-Sprouts-Media-LLC/WPDokploystack**
@@ -245,6 +246,12 @@ That inner `_data` path is the site root (`wp-admin`, `wp-content`, `wp-includes
 | `REDIS_MAXMEMORY`         | `512mb`         | Redis maximum memory |
 | `REDIS_MAXMEMORY_POLICY`  | `allkeys-lru`   | Eviction policy      |
 
+### WP-Cron Settings
+
+| Variable           | Default | Description                                                                 |
+|--------------------|---------|-----------------------------------------------------------------------------|
+| `WP_CRON_INTERVAL` | `300`   | Seconds between each `wp-cron.php` trigger. Lower = more frequent; default is 5 minutes. |
+
 ### Resource Limits
 
 | Variable                  | Default | Description               |
@@ -348,6 +355,68 @@ When a new version adds environment variables:
   3. Click **Redeploy**.
 
 The CHANGELOG always documents which new variables were introduced and whether they have defaults.
+
+---
+
+### Upgrading to v1.13.0 — Existing Installs
+
+v1.13.0 adds the **WP-Cron sidecar** and `DISABLE_WP_CRON=true` to wp-config. Here is what existing deployments need to do:
+
+#### What changes automatically on Redeploy
+
+| Change | Auto-applied? | Notes |
+|--------|:---:|-------|
+| `wp-cron` service starts | ✅ Yes (Option B) / ⚠️ Manual (Option A) | New service; must exist in your compose |
+| `DISABLE_WP_CRON=true` in wp-config | ✅ Yes | Written via `WORDPRESS_CONFIG_EXTRA` on container restart |
+| `WP_CRON_INTERVAL` env var | ✅ Default `300` | No action needed unless you want a different interval |
+
+#### Option A (One-Click Template) — Manual compose edit required
+
+Your compose snapshot does not have the `wp-cron` service. Add it manually:
+
+1. In Dokploy → **Compose** tab of your service.
+2. Add the following block before the `sftp:` service entry:
+
+```yaml
+  # ---------------------------------------------------------------------------
+  # WP-Cron sidecar — triggers wp-cron.php every 5 min via internal network.
+  # ---------------------------------------------------------------------------
+  wp-cron:
+    image: alpine:latest
+    command: >
+      sh -c "
+        echo 'WP-Cron sidecar started. Interval: 300s';
+        while true; do
+          wget -q -O - 'http://nginx/wp-cron.php?doing_wp_cron' > /dev/null 2>&1
+            && echo \"[$(date '+%Y-%m-%d %H:%M:%S')] wp-cron triggered\"
+            || echo \"[$(date '+%Y-%m-%d %H:%M:%S')] wp-cron request failed\"
+          ;
+          sleep ${WP_CRON_INTERVAL:-300};
+        done
+      "
+    depends_on:
+      nginx:
+        condition: service_healthy
+    networks:
+      - internal
+    restart: unless-stopped
+```
+
+3. Also add `define('DISABLE_WP_CRON', true);` to your `WORDPRESS_CONFIG_EXTRA` environment variable block.
+4. Click **Redeploy**.
+
+#### Option B (GitHub-linked) — Pull and Redeploy
+
+1. In Dokploy → **General** tab → click **Pull**.
+2. Click **Redeploy**.
+
+The `wp-cron` service and `DISABLE_WP_CRON` constant are both picked up automatically.
+
+#### Is there any risk?
+
+> **No data risk.** The WP-Cron sidecar is a read-only HTTP client — it only calls `wp-cron.php`. It does not touch any files, volumes, or databases. A failed cron trigger is silently logged and retried in 5 minutes.
+
+> **DISABLE_WP_CRON impact:** Before this change, WP fired pseudo-cron on every page load (if due). After this change, WP never fires cron on its own — the sidecar is solely responsible. If the `wp-cron` container is stopped or crashes, no scheduled jobs run until it restarts. `restart: unless-stopped` protects against this.
 
 ---
 
@@ -690,6 +759,69 @@ wp millicache stats
 ```
 
 Or enable debug headers (`MC_CACHE_DEBUG`) and look for `X-MilliCache-Status: hit` on repeat anonymous visits.
+
+---
+
+## WP-Cron — Reliable Scheduled Tasks
+
+WordPress's built-in pseudo-cron (`wp-cron.php`) only fires when a visitor hits the site. On low-traffic sites, this means scheduled events (e.g., scheduled posts, plugin cleanups, email queues) can be delayed by hours.
+
+This stack ships a dedicated **WP-Cron sidecar** that triggers `wp-cron.php` on a fixed schedule regardless of traffic.
+
+### How it works
+
+```
+[wp-cron container] ──every 5 min──► http://nginx/wp-cron.php?doing_wp_cron
+                                           │
+                                     [nginx] → [wordpress/php-fpm]
+                                           │
+                                     WordPress processes due events
+```
+
+The request travels over the **internal Docker network** — no SSL, no external DNS, no dependency on your public domain being reachable.
+
+`DISABLE_WP_CRON=true` is set in `wp-config.php` so WordPress does **not** fire its own pseudo-cron on page load. The sidecar is the only scheduler.
+
+### Verifying it's running
+
+```bash
+# View real-time cron log in Dokploy → Logs → wp-cron
+# Or via SSH:
+docker logs <compose-name>-wp-cron-1 --tail 20
+```
+
+Expected output every 5 minutes:
+
+```
+WP-Cron sidecar started. Interval: 300s
+[2026-06-09 16:45:00] wp-cron triggered
+[2026-06-09 16:50:00] wp-cron triggered
+```
+
+### Manually triggering cron (WP-CLI)
+
+```bash
+docker exec -it <wordpress-container-name> bash
+wp cron event run --due-now --allow-root
+wp cron event list --allow-root
+```
+
+### Changing the cron interval
+
+Add to Dokploy **Environment**, then **Redeploy**:
+
+```env
+WP_CRON_INTERVAL=60   # Every 1 minute (high-frequency sites)
+WP_CRON_INTERVAL=600  # Every 10 minutes (low-activity sites)
+```
+
+### Disabling the sidecar
+
+If you want to manage WP-Cron yourself (e.g., via a host-level system cron or Cronicle):
+
+1. Remove or comment out the `wp-cron:` service block in your compose.
+2. Remove `define('DISABLE_WP_CRON', true);` from `WORDPRESS_CONFIG_EXTRA` — or add `DISABLE_WP_CRON=false` to Environment.
+3. Redeploy.
 
 ---
 

@@ -8,6 +8,19 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.13.0] - 09/06/2026
+
+### Added
+- **WP-Cron sidecar service** (`wp-cron`) — Always-on Alpine container that triggers `wp-cron.php` every 5 minutes via the internal Docker network (`http://nginx/wp-cron.php?doing_wp_cron`). Bypasses public DNS and SSL overhead; runs reliably regardless of site traffic. Configurable interval via `WP_CRON_INTERVAL` env var (default: `300` seconds).
+- `DISABLE_WP_CRON=true` constant added to `WORDPRESS_CONFIG_EXTRA` in both `docker-compose.yml` and `blueprints/ksm-wp-stack/docker-compose.yml` — prevents WordPress from spawning its own pseudo-cron on page load when the sidecar is managing scheduling.
+
+### Changed
+- `docker-compose.yml` — `wp-cron` service added with resource limits (`0.05` CPU / `32M` RAM), `restart: unless-stopped`, and `depends_on: nginx: healthy`.
+- `blueprints/ksm-wp-stack/docker-compose.yml` — Same `wp-cron` service added (no resource limits block in blueprint to keep the template lean).
+- `docs/hosting-guide.md` — Added `WP-Cron` to stack component table; new **WP-Cron — Reliable Scheduled Tasks** section covering how it works, log verification, interval tuning, and disabling; new `WP_CRON_INTERVAL` env var entry; **Upgrading to v1.13.0** guide for existing Option A and Option B installs.
+
+---
+
 ## [1.12.0] - 05/06/2026
 
 ### Removed
