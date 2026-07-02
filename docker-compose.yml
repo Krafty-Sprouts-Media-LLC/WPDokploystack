@@ -1,11 +1,11 @@
 # =============================================================================
 # docker-compose.yml
-# KSM WPDokploystack — Main Docker Compose stack definition
+# DokployPress — Main Docker Compose stack definition
 #
 # Services: nginx, wordpress, db (MariaDB), redis, plugin-installer,
 #           phpmyadmin, wp-cron, sftp (optional, tools profile)
 #
-# @package KSM-WPDokploystack
+# @package DokployPress
 # @since   1.0.0
 # =============================================================================
 

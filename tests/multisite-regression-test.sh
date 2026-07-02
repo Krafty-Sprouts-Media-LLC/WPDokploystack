@@ -41,9 +41,10 @@ assert_file_contains() {
 
 assert_file_contains "${ROOT_DIR}/docker-compose.yml" 'WORDPRESS_MULTISITE_CONFIG=${WORDPRESS_MULTISITE_CONFIG:-}' "Main compose exposes multisite config env"
 assert_file_contains "${ROOT_DIR}/docker-compose.yml" 'WORDPRESS_PUBLIC_URL=${WORDPRESS_PUBLIC_URL:-}' "Main compose exposes public URL env"
-assert_file_contains "${ROOT_DIR}/blueprints/ksm-wp-stack/docker-compose.yml" 'WORDPRESS_MULTISITE_CONFIG=${WORDPRESS_MULTISITE_CONFIG:-}' "Blueprint compose exposes multisite config env"
-assert_file_contains "${ROOT_DIR}/blueprints/ksm-wp-stack/docker-compose.yml" 'WORDPRESS_PUBLIC_URL=${WORDPRESS_PUBLIC_URL:-}' "Blueprint compose exposes public URL env"
-assert_file_contains "${ROOT_DIR}/blueprints/ksm-wp-stack/template.toml" 'WORDPRESS_PUBLIC_URL=https://${main_domain}' "Blueprint template injects public URL"
+assert_file_contains "${ROOT_DIR}/blueprints/dokploypress/docker-compose.yml" 'WORDPRESS_MULTISITE_CONFIG=${WORDPRESS_MULTISITE_CONFIG:-}' "Blueprint compose exposes multisite config env"
+assert_file_contains "${ROOT_DIR}/blueprints/dokploypress/docker-compose.yml" 'WORDPRESS_PUBLIC_URL=${WORDPRESS_PUBLIC_URL:-}' "Blueprint compose exposes public URL env"
+assert_file_contains "${ROOT_DIR}/blueprints/dokploypress/template.toml" 'WORDPRESS_PUBLIC_URL=https://${main_domain}' "Blueprint template injects public URL"
+assert_file_contains "${ROOT_DIR}/blueprints/dokploypress/docker-compose.yml" 'dokploypress-nginx' "Blueprint uses dokploypress GHCR images"
 assert_file_contains "${ROOT_DIR}/template.toml" 'WORDPRESS_PUBLIC_URL=https://${main_domain}' "Root template injects public URL"
 assert_file_contains "${ROOT_DIR}/wordpress/docker-entrypoint-custom.sh" 'repair_internal_site_url' "Entrypoint repairs internal site URLs"
 assert_file_contains "${ROOT_DIR}/wordpress/docker-entrypoint-custom.sh" 'apply_multisite_config' "Entrypoint applies multisite config env"

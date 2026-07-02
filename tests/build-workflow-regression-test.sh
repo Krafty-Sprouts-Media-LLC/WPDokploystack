@@ -59,6 +59,9 @@ assert_contains "platforms: \${{ matrix.platforms }}" "Build platforms come from
 assert_contains "cache-from: type=gha,scope=\${{ matrix.image }}" "Build uses per-image GitHub Actions cache"
 assert_contains "cache-to: type=gha,mode=max,scope=\${{ matrix.image }}" "Build saves per-image GitHub Actions cache"
 assert_not_contains "no-cache: true" "Plugin-installer build is not forced cold"
+assert_contains "IMAGE_PREFIX=ghcr.io/\${OWNER_LC}/dokploypress" "Workflow publishes dokploypress GHCR images"
+assert_not_contains "dokploy-wp" "Workflow does not publish legacy dokploy-wp images"
+assert_contains "blueprints/dokploypress/docker-compose.yml" "Blueprint tag update targets dokploypress"
 
 echo ""
 echo "=============================================="

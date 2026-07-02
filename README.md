@@ -1,10 +1,10 @@
-# KSM WordPress Stack (DokployPress)
+# DokployPress
 
-Production-ready WordPress deployment stack optimized for Dokploy with Redis object cache, MilliCache full-page caching, Nginx, and management tools.
+Production-ready WordPress deployment stack for Dokploy with Redis object cache, MilliCache full-page caching, Nginx, and management tools.
 
 Forked and extended from [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp) by [Al-Mamun Talukder](https://itsmereal.com).
 
-> **Planned rebrand:** This stack will adopt the **DokployPress** product name. Existing deployments, data, and GHCR image updates are unaffected. See [docs/dokploypress-migration-guide.md](docs/dokploypress-migration-guide.md) for the phased plan.
+> **Upgrading from 1.x?** See [docs/upgrade-to-2.0.0.md](docs/upgrade-to-2.0.0.md) — swap three image lines, keep `STACK_SLUG`, redeploy. No data loss.
 
 ## Stack Components
 
@@ -33,9 +33,9 @@ Pick one of the two deploy methods below, then follow the shared **Post-Deploy S
    ```
    https://raw.githubusercontent.com/Krafty-Sprouts-Media-LLC/WPDokploystack/main
    ```
-6. You will find **"KSM WordPress Stack"**
+6. You will find **"DokployPress"**
 7. Click **Create** and **Confirm**
-8. Open **Environment** — `STACK_SLUG` is **already set** to the service ID shown under the stack name (e.g. `mysite-ksmwpstack-8zv3p5`). **Before first Deploy**, replace it with your short project name (e.g. `STACK_SLUG=mysite`) so volumes are `mysite_data`, not `mysite-ksmwpstack-8zv3p5_data`
+8. Open **Environment** — `STACK_SLUG` is **already set** to the service ID shown under the stack name (e.g. `mysite-dokploypress-8zv3p5`). **Before first Deploy**, replace it with your short project name (e.g. `STACK_SLUG=mysite`) so volumes are `mysite_data`, not `mysite-dokploypress-8zv3p5_data`
 9. Click **Deploy**
 
 ### Option B: Manual Compose Deploy

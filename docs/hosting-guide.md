@@ -2,7 +2,7 @@
 
 > **Original Article:** [Easily Host WordPress Sites Using Dokploy with Redis and Nginx](https://itsmereal.com/easily-host-wordpress-sites-using-dokploy-with-redis-and-nginx/)
 > **Original Author:** Al-Mamun Talukder ([@almamunreal](https://twitter.com/almamunreal)) — Full-Stack Developer, Minimalist Designer, Tech Enthusiast. Founder of [Omnixima](https://itsmereal.com).
-> **Published:** December 19, 2025 | **Adapted for KSM WPDokploystack use**
+> **Published:** December 19, 2025 | **Adapted for DokployPress**
 
 ---
 
@@ -10,9 +10,9 @@
 
 This guide is adapted from Al-Mamun Talukder's excellent article on hosting WordPress on Dokploy. The original author switched from Coolify (a Docker-based server management tool) to Dokploy, and to replicate the same production performance — featuring Redis caching, Nginx reverse proxying, and PHP-FPM — he created a custom Docker Compose stack specifically optimized for Dokploy.
 
-This documentation captures those steps and supplements them with additional details for our KSM WPDokploystack deployment.
+This documentation captures those steps and supplements them with additional details for **DokployPress** deployments.
 
-For the planned **DokployPress** rebrand (repo rename, identity, and upgrade safety for existing installs), see [dokploypress-migration-guide.md](dokploypress-migration-guide.md).
+For upgrading an existing 1.x install (`dokploy-wp-*` images), see [upgrade-to-2.0.0.md](upgrade-to-2.0.0.md).
 
 ---
 
@@ -80,7 +80,7 @@ The stack is available at: **https://github.com/Krafty-Sprouts-Media-LLC/WPDokpl
    ```
    https://raw.githubusercontent.com/Krafty-Sprouts-Media-LLC/WPDokploystack/main
    ```
-6. Find and select **"KSM WordPress Stack"**.
+6. Find and select **"DokployPress"**.
 7. Click **Create** and then **Confirm**.
 8. Open **Environment** — `STACK_SLUG` is already set to the service ID under the stack name (e.g. `mysite-ksmwpstack-8zv3p5`, same string as on the **General** tab). **Before first Deploy**, replace it with your short project name (e.g. `STACK_SLUG=mysite`) so host volumes are `mysite_data`, `mysite_db_data`, `mysite_redis_data`.
 9. Click **Deploy** once ready.
@@ -306,9 +306,9 @@ Published to GHCR as `:latest`. When GitHub Actions builds a new release, **Rede
 
 | Service | Image | How to update |
 |---------|-------|---------------|
-| **nginx** | `ghcr.io/krafty-sprouts-media-llc/dokploy-wp-nginx:latest` | **Redeploy** — pulls latest GHCR build |
-| **wordpress** (PHP-FPM) | `ghcr.io/krafty-sprouts-media-llc/dokploy-wp-wordpress:latest` | **Redeploy** — pulls latest (PHP version bumps ship in this image) |
-| **plugin-installer** | `ghcr.io/krafty-sprouts-media-llc/dokploy-wp-plugin-installer:latest` | **Redeploy** — one-shot sidecar re-runs if plugins missing |
+| **nginx** | `ghcr.io/krafty-sprouts-media-llc/dokploypress-nginx:latest` | **Redeploy** — pulls latest GHCR build |
+| **wordpress** (PHP-FPM) | `ghcr.io/krafty-sprouts-media-llc/dokploypress-wordpress:latest` | **Redeploy** — pulls latest (PHP version bumps ship in this image) |
+| **plugin-installer** | `ghcr.io/krafty-sprouts-media-llc/dokploypress-plugin-installer:latest` | **Redeploy** — one-shot sidecar re-runs if plugins missing |
 
 #### Third-party images (MariaDB, Redis, phpMyAdmin, optional SFTP)
 
@@ -608,7 +608,7 @@ FLUSH PRIVILEGES;
 
 ### Display name vs volume names
 
-- The **display name** in Dokploy (e.g. "KSM WordPress Stack") is cosmetic — rename anytime in **General**.
+- The **display name** in Dokploy (e.g. "DokployPress") is cosmetic — rename anytime in **General**.
 - **Docker volume names** come from `STACK_SLUG` (preferred) or Dokploy's `COMPOSE_PROJECT_NAME` fallback. They do **not** follow UI renames.
 
 ### Prevent long volume names

@@ -10,12 +10,11 @@ breaking existing Dokploy deployments, Docker volumes, or GHCR image updates.
 
 # DokployPress Identity Migration Guide
 
-> **Status:** Planned — not yet executed  
-> **Audience:** Maintainers (Krafty Sprouts Media LLC) and existing stack operators  
-> **Current product name:** KSM WordPress Stack / KSM WPDokploystack  
-> **Target product name:** DokployPress
+> **Status:** Completed in **2.0.0** (same repository)  
+> **Audience:** Reference for identifier changes and upgrade safety  
+> **Product name:** DokployPress (formerly KSM WordPress Stack / KSM WPDokploystack)
 
-This guide explains how to rebrand this project to **DokployPress** in phases, what affects live sites, and how existing installs continue receiving updates.
+This guide documents the **2.0.0 DokployPress rebrand** in this repository. For the production upgrade checklist, see [upgrade-to-2.0.0.md](upgrade-to-2.0.0.md).
 
 ---
 

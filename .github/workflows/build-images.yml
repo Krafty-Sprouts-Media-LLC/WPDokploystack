@@ -49,7 +49,7 @@ jobs:
       - name: Set lowercase image prefix
         run: |
           OWNER_LC=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          echo "IMAGE_PREFIX=ghcr.io/${OWNER_LC}/dokploy-wp" >> $GITHUB_ENV
+          echo "IMAGE_PREFIX=ghcr.io/${OWNER_LC}/dokploypress" >> $GITHUB_ENV
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -105,18 +105,15 @@ jobs:
       - name: Update blueprint image tags to current version
         run: |
           VERSION="${{ steps.version.outputs.version }}"
-          BLUEPRINT="blueprints/ksm-wp-stack/docker-compose.yml"
-          # Replace any existing version tag (x.y.z) on the three custom images.
-          # Use # as the sed delimiter — | cannot be used because the ERE alternation
-          # (nginx|wordpress|plugin-installer) contains literal pipe characters.
+          BLUEPRINT="blueprints/dokploypress/docker-compose.yml"
           sed -i -E \
-            "s#(ghcr\.io/krafty-sprouts-media-llc/dokploy-wp-(nginx|wordpress|plugin-installer)):[0-9]+\.[0-9]+\.[0-9]+#\1:${VERSION}#g" \
+            "s#(ghcr\.io/krafty-sprouts-media-llc/dokploypress-(nginx|wordpress|plugin-installer)):[0-9]+\.[0-9]+\.[0-9]+#\1:${VERSION}#g" \
             "${BLUEPRINT}"
           echo "Blueprint image tags updated to ${VERSION}:"
-          grep "ghcr.io/krafty-sprouts-media-llc" "${BLUEPRINT}"
+          grep "ghcr.io/krafty-sprouts-media-llc/dokploypress" "${BLUEPRINT}"
 
       - name: Commit updated blueprint image tags
         uses: stefanzweifel/git-auto-commit-action@v5
         with:
           commit_message: "chore: update blueprint image tags to ${{ steps.version.outputs.version }} [skip ci]"
-          file_pattern: blueprints/ksm-wp-stack/docker-compose.yml
+          file_pattern: blueprints/dokploypress/docker-compose.yml

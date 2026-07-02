@@ -1,10 +1,31 @@
 # Changelog
 
-All notable changes to **KSM WPDokploystack** will be documented in this file.
+All notable changes to **DokployPress** will be documented in this file.
+
+Formerly released as **KSM WPDokploystack** (versions 1.x).
 
 This project adheres to [Semantic Versioning](https://semver.org/).
 
 Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp) by [Al-Mamun Talukder](https://itsmereal.com)
+
+---
+
+## [2.0.0] - 02/07/2026
+
+### Added
+- `blueprints/dokploypress/` — New Dokploy template blueprint (`id: dokploypress`) with `dokploypress-*` GHCR images.
+- `docs/upgrade-to-2.0.0.md` — Production upgrade checklist: swap three image lines, keep `STACK_SLUG`, redeploy.
+
+### Changed
+- **DokployPress rebrand (2.0.0)** — Product identity, template id, and GHCR images renamed from `dokploy-wp-*` to `dokploypress-*`. Repository remains `WPDokploystack` on GitHub.
+- `.github/workflows/build-images.yml` — Publishes `ghcr.io/krafty-sprouts-media-llc/dokploypress-{nginx,wordpress,plugin-installer}` only.
+- `meta.json` — `id: dokploypress`, `name: DokployPress`, version `2.0.0`.
+- `README.md` and `docs/hosting-guide.md` — DokployPress naming, template selection, and image references.
+- `.github/workflows/release.yml` — Release title uses DokployPress.
+- `tests/multisite-regression-test.sh` and `tests/build-workflow-regression-test.sh` — Assert DokployPress blueprint and CI paths.
+
+### Removed
+- `blueprints/ksm-wp-stack/` — Replaced by `blueprints/dokploypress/`. Existing deployments are unaffected until compose image lines are updated.
 
 ---
 
