@@ -170,6 +170,12 @@ Result on the VPS:
 | `REDIS_MAXMEMORY` | 512mb | Redis maximum memory |
 | `REDIS_MAXMEMORY_POLICY` | allkeys-lru | Eviction policy |
 
+### WordPress Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WORDPRESS_PUBLIC_URL` | — | Public site URL, e.g. `https://yourdomain.com`. Dokploy blueprints set this automatically from the main domain. Used to repair `siteurl`/`home` if they were accidentally set to an internal Docker host. |
+
 ### WP-Cron Settings
 
 | Variable | Default | Description |
@@ -181,6 +187,7 @@ Result on the VPS:
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `WP_MULTISITE_MODE` | `disabled` | WordPress Multisite mode. `disabled` = single-site (default, no change). `subfolder` = sub-sites at `/site1/`. `subdomain` = sub-sites at `site1.yourdomain.com`. See [docs/hosting-guide.md](docs/hosting-guide.md#wordpress-multisite) for the full setup walkthrough. |
+| `WORDPRESS_MULTISITE_CONFIG` | — | Optional WordPress-generated multisite constants. The entrypoint writes them into a managed `wp-config.php` block after running Network Setup. |
 
 ### Resource Limits (No Rebuild Required)
 
@@ -300,6 +307,12 @@ NGINX_CLIENT_MAX_BODY_SIZE=512M
 2. Check WordPress container logs for `[KSM] ✅ WP_ALLOW_MULTISITE set in wp-config.php` — if missing, the entrypoint could not find `wp-config.php` yet (run after WordPress setup wizard)
 3. Open WP Admin in a **private/incognito window** — MilliCache full-page cache may be serving a cached admin page that predates the multisite enable
 4. See [docs/hosting-guide.md](docs/hosting-guide.md#wordpress-multisite) for the full two-phase setup guide
+
+### WordPress redirects to `https://nginx/wp-login.php`
+
+1. Confirm `WORDPRESS_PUBLIC_URL=https://yourdomain.com` is set in Dokploy **Environment**. New blueprint deployments set it automatically.
+2. Redeploy the stack. On startup, the WordPress container repairs `siteurl` and `home` only if either value points at a Docker-internal host such as `nginx`.
+3. Open WP Admin in a private/incognito window.
 
 ## Smoke Testing
 

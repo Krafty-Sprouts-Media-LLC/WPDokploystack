@@ -246,6 +246,12 @@ That inner `_data` path is the site root (`wp-admin`, `wp-content`, `wp-includes
 | `REDIS_MAXMEMORY`         | `512mb`         | Redis maximum memory |
 | `REDIS_MAXMEMORY_POLICY`  | `allkeys-lru`   | Eviction policy      |
 
+### WordPress Settings
+
+| Variable               | Default | Description |
+|------------------------|---------|-------------|
+| `WORDPRESS_PUBLIC_URL` | —       | Public site URL, e.g. `https://yourdomain.com`. Dokploy blueprints set this automatically from the main domain. Used to repair `siteurl`/`home` if they were accidentally set to a Docker-internal host such as `nginx`. |
+
 ### WP-Cron Settings
 
 | Variable           | Default | Description                                                                 |
@@ -257,6 +263,7 @@ That inner `_data` path is the site root (`wp-admin`, `wp-content`, `wp-includes
 | Variable             | Default    | Description                                                                   |
 |----------------------|------------|-------------------------------------------------------------------------------|
 | `WP_MULTISITE_MODE`  | `disabled` | WordPress Multisite mode. `disabled` = single-site (default). `subfolder` = path-based sub-sites (`/site1`, `/site2`). `subdomain` = subdomain-based sub-sites (`site1.domain.com`). See **WordPress Multisite** section below. |
+| `WORDPRESS_MULTISITE_CONFIG` | — | Optional WordPress-generated multisite constants. The entrypoint writes them into a managed `wp-config.php` block after running Network Setup. |
 
 ### Resource Limits
 
@@ -914,17 +921,10 @@ All rewrites are guarded by `!-e $request_filename` — they are no-ops on singl
 3. Click **Install**.
 4. WordPress displays two blocks of code. **Do not** paste these directly into `wp-config.php` — the entrypoint manages that file. Instead:
 
-**Add the WordPress-generated constants to `WORDPRESS_CONFIG_EXTRA`** in Dokploy Environment. They look like this (values will differ for your site):
+**Add only the WordPress-generated multisite constants to `WORDPRESS_MULTISITE_CONFIG`** in Dokploy Environment. They look like this (values will differ for your site):
 
 ```env
-WORDPRESS_CONFIG_EXTRA=
-    define('WP_REDIS_HOST', 'redis');
-    define('WP_REDIS_PORT', 6379);
-    define('WP_CACHE', true);
-    define('MC_STORAGE_HOST', 'redis');
-    define('MC_STORAGE_PORT', 6379);
-    define('MC_STORAGE_DB', 1);
-    define('DISABLE_WP_CRON', true);
+WORDPRESS_MULTISITE_CONFIG=
     define('MULTISITE', true);
     define('SUBDOMAIN_INSTALL', true);
     define('DOMAIN_CURRENT_SITE', 'yourdomain.com');
@@ -937,6 +937,17 @@ WORDPRESS_CONFIG_EXTRA=
 
 5. Click **Redeploy**.
 6. Log back into WP Admin — you now have a **My Sites** menu and **Network Admin** panel.
+
+### If WP Admin redirects to `https://nginx/wp-login.php`
+
+`nginx` is the internal Docker service name and should never appear in browser redirects. This can happen if an internal request writes the Docker hostname into WordPress `siteurl` or `home`.
+
+1. Confirm `WORDPRESS_PUBLIC_URL=https://yourdomain.com` is set in Dokploy **Environment**. New blueprint deployments set this automatically from the main domain.
+2. Click **Redeploy**.
+3. Check **Logs → wordpress** for `Repaired siteurl` or `Repaired home`.
+4. Open WP Admin again in a private/incognito window.
+
+The repair is intentionally narrow: it only changes `siteurl`/`home` when the current value is an internal host such as `nginx`, `wordpress`, `localhost`, an IP address, or a non-domain container name.
 
 ### Phase 3 — Wildcard domain in Dokploy (subdomain mode only)
 
@@ -961,7 +972,7 @@ Once Network Setup is complete, go to **Network Admin → Sites → Add New**. F
 To revert to single-site:
 
 1. Change `WP_MULTISITE_MODE=disabled` in Dokploy Environment.
-2. Remove the multisite constants (`MULTISITE`, `SUBDOMAIN_INSTALL`, etc.) from `WORDPRESS_CONFIG_EXTRA`.
+2. Remove the multisite constants (`MULTISITE`, `SUBDOMAIN_INSTALL`, etc.) from `WORDPRESS_MULTISITE_CONFIG`.
 3. Redeploy.
 
 > **Warning:** Reverting multisite after sub-sites have been created will make those sub-sites inaccessible. Back up the database before reverting.

@@ -8,7 +8,7 @@
  *              Redis cache reconnection, migration artefact removal, and
  *              domain correction. Fires only when a migration completion
  *              marker is detected — zero overhead on normal requests.
- * Version:     1.3.0
+ * Version:     1.3.1
  * Author:      Krafty Sprouts Media LLC
  * Author URI:  https://kraftysprouts.media
  *
@@ -114,7 +114,67 @@ class KSM_Migration_Fixer {
 			return;
 		}
 
+		if ( self::is_internal_request() ) {
+			return;
+		}
+
 		add_action( 'init', array( __CLASS__, 'run_post_migration_cleanup' ), 1 );
+	}
+
+	/**
+	 * Determine whether the current request came from an internal container path.
+	 *
+	 * @since 1.14.2
+	 * @return bool
+	 */
+	private static function is_internal_request() {
+		if ( function_exists( 'wp_doing_cron' ) && wp_doing_cron() ) {
+			return true;
+		}
+
+		if ( defined( 'DOING_CRON' ) && DOING_CRON ) {
+			return true;
+		}
+
+		$host = self::get_request_host();
+
+		if ( '' === $host ) {
+			return true;
+		}
+
+		$internal_hosts = array(
+			'nginx',
+			'wordpress',
+			'localhost',
+		);
+
+		if ( in_array( $host, $internal_hosts, true ) ) {
+			return true;
+		}
+
+		if ( filter_var( $host, FILTER_VALIDATE_IP ) ) {
+			return true;
+		}
+
+		return false === strpos( $host, '.' );
+	}
+
+	/**
+	 * Get the normalized HTTP host from the current request.
+	 *
+	 * @since 1.14.2
+	 * @return string
+	 */
+	private static function get_request_host() {
+		$host = strtolower( trim( sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) ) ) );
+
+		if ( '' === $host ) {
+			return '';
+		}
+
+		$host = preg_replace( '/:\d+$/', '', $host );
+
+		return is_string( $host ) ? $host : '';
 	}
 
 	/**
@@ -263,9 +323,10 @@ class KSM_Migration_Fixer {
 	 * @return void
 	 */
 	private static function fix_site_urls( array &$log ) {
-		$protocol    = is_ssl() ? 'https' : 'http';
-		$current_url = $protocol . '://' . sanitize_text_field( wp_unslash( $_SERVER['HTTP_HOST'] ?? '' ) );
-		$stored_url  = self::get_option_from_database( 'siteurl' );
+		$current_host = self::get_request_host();
+		$protocol     = is_ssl() ? 'https' : 'http';
+		$current_url  = $current_host ? $protocol . '://' . $current_host : '';
+		$stored_url   = self::get_option_from_database( 'siteurl' );
 
 		if ( $stored_url && $current_url && $stored_url !== $current_url ) {
 			update_option( 'siteurl', $current_url );

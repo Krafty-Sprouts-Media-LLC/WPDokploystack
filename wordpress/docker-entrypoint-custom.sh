@@ -9,6 +9,7 @@
 #   3. Auto-correct wp-config.php if overwritten by a migration tool
 #      (e.g. Migrate Guru) with host-specific values that don't match
 #      this Docker stack's internal network configuration
+#   3a. Repair siteurl/home if a Docker-internal host was stored
 #   4. Enforce DISABLE_WP_CRON=true in wp-config.php via WP-CLI
 #      (WORDPRESS_CONFIG_EXTRA only runs on fresh installs; this ensures
 #       existing installs also get the constant on every container start)
@@ -65,6 +66,163 @@ WP_CONFIG="${WP_PATH}/wp-config.php"
 EXPECTED_DB_HOST="${WORDPRESS_DB_HOST:-db}"
 EXPECTED_DB_USER="${WORDPRESS_DB_USER:-wordpress}"
 EXPECTED_DB_NAME="${WORDPRESS_DB_NAME:-wordpress}"
+
+normalize_public_url() {
+    local url="${1%/}"
+
+    case "${url}" in
+        http://*|https://*)
+            echo "${url}"
+            ;;
+        *)
+            echo ""
+            ;;
+    esac
+}
+
+get_url_host() {
+    php -r '
+        $url = $argv[1] ?? "";
+        $host = parse_url($url, PHP_URL_HOST);
+        echo strtolower($host ?: "");
+    ' "$1"
+}
+
+is_internal_url() {
+    local url="$1"
+    local host
+    host="$(get_url_host "${url}")"
+
+    if [ -z "${host}" ]; then
+        return 0
+    fi
+
+    case "${host}" in
+        nginx|wordpress|localhost)
+            return 0
+            ;;
+    esac
+
+    if php -r 'exit(filter_var($argv[1] ?? "", FILTER_VALIDATE_IP) ? 0 : 1);' "${host}"; then
+        return 0
+    fi
+
+    case "${host}" in
+        *.*)
+            return 1
+            ;;
+        *)
+            return 0
+            ;;
+    esac
+}
+
+repair_internal_site_url() {
+    if [ -z "${WORDPRESS_PUBLIC_URL:-}" ]; then
+        return 0
+    fi
+
+    if [ ! -f "${WP_CONFIG}" ]; then
+        return 0
+    fi
+
+    if ! wp core is-installed --path="${WP_PATH}" --allow-root 2>/dev/null; then
+        return 0
+    fi
+
+    local public_url
+    public_url="$(normalize_public_url "${WORDPRESS_PUBLIC_URL}")"
+
+    if [ -z "${public_url}" ]; then
+        echo "[KSM] ⚠️  WORDPRESS_PUBLIC_URL must start with http:// or https://; skipping site URL repair."
+        return 0
+    fi
+
+    local repaired=0
+    local option
+    local current_url
+
+    for option in siteurl home; do
+        current_url="$(wp option get "${option}" --path="${WP_PATH}" --allow-root 2>/dev/null || echo "")"
+
+        if is_internal_url "${current_url}"; then
+            wp option update "${option}" "${public_url}" --path="${WP_PATH}" --allow-root >/dev/null
+            echo "[KSM] ✅ Repaired ${option}: ${current_url:-empty} → ${public_url}"
+            repaired=1
+        fi
+    done
+
+    if [ "${repaired}" = "1" ]; then
+        wp cache flush --path="${WP_PATH}" --allow-root >/dev/null 2>&1 || true
+        echo "[KSM] ✅ WordPress cache flushed after site URL repair."
+    fi
+}
+
+apply_multisite_config() {
+    if [ ! -f "${WP_CONFIG}" ]; then
+        return 0
+    fi
+
+    local multisite_config="${WORDPRESS_MULTISITE_CONFIG:-}"
+
+    case "${WP_MULTISITE_MODE:-disabled}" in
+        subfolder|subdomain)
+            ;;
+        *)
+            multisite_config=""
+            ;;
+    esac
+
+    php -r '
+        $config_file      = $argv[1] ?? "";
+        $multisite_config = trim($argv[2] ?? "");
+        $begin            = "// BEGIN KSM WORDPRESS_MULTISITE_CONFIG";
+        $end              = "// END KSM WORDPRESS_MULTISITE_CONFIG";
+
+        if ( "" === $config_file || ! is_readable( $config_file ) || ! is_writable( $config_file ) ) {
+            exit( 1 );
+        }
+
+        $contents = file_get_contents( $config_file );
+
+        if ( false === $contents ) {
+            exit( 1 );
+        }
+
+        $pattern  = "/\n?" . preg_quote( $begin, "/" ) . ".*?" . preg_quote( $end, "/" ) . "\n?/s";
+        $contents = preg_replace( $pattern, "\n", $contents );
+
+        if ( "" !== $multisite_config ) {
+            $block = $begin . PHP_EOL . $multisite_config . PHP_EOL . $end . PHP_EOL;
+            $stop  = "/* That" . chr( 39 ) . "s all, stop editing! Happy publishing. */";
+
+            if ( false !== strpos( $contents, $stop ) ) {
+                $contents = str_replace( $stop, $block . PHP_EOL . $stop, $contents );
+            } else {
+                $require_single = "require_once ABSPATH . " . chr( 39 ) . "wp-settings.php" . chr( 39 ) . ";";
+                $require_double = "require_once ABSPATH . \"wp-settings.php\";";
+
+                if ( false !== strpos( $contents, $require_single ) ) {
+                    $contents = str_replace( $require_single, $block . PHP_EOL . $require_single, $contents );
+                } elseif ( false !== strpos( $contents, $require_double ) ) {
+                    $contents = str_replace( $require_double, $block . PHP_EOL . $require_double, $contents );
+                } else {
+                    $contents = rtrim( $contents ) . PHP_EOL . PHP_EOL . $block;
+                }
+            }
+        }
+
+        if ( false === file_put_contents( $config_file, $contents ) ) {
+            exit( 1 );
+        }
+    ' "${WP_CONFIG}" "${multisite_config}"
+
+    if [ -n "${multisite_config}" ]; then
+        echo "[KSM] ✅ WORDPRESS_MULTISITE_CONFIG applied to wp-config.php."
+    else
+        echo "[KSM] WORDPRESS_MULTISITE_CONFIG not active; managed multisite config block removed if present."
+    fi
+}
 
 # ---------------------------------------------------------------------------
 # 2. Ensure WordPress core files exist in volume (fresh install only)
@@ -136,6 +294,13 @@ if [ -f "${WP_CONFIG}" ]; then
 fi
 
 # ---------------------------------------------------------------------------
+# 3a. Site URL repair for Docker-internal hosts
+#     If a background/internal request caused siteurl/home to become "nginx",
+#     restore them from WORDPRESS_PUBLIC_URL without touching valid domains.
+# ---------------------------------------------------------------------------
+repair_internal_site_url
+
+# ---------------------------------------------------------------------------
 # 4. Enforce DISABLE_WP_CRON constant in wp-config.php
 #    WORDPRESS_CONFIG_EXTRA only writes constants on a fresh install.
 #    To guarantee DISABLE_WP_CRON=true on all installs (new and existing),
@@ -163,7 +328,7 @@ fi
 #
 #     NOTE: After "Tools → Network Setup" completes the wizard, WordPress
 #     provides additional constants (MULTISITE, SUBDOMAIN_INSTALL, etc.).
-#     Add those to Dokploy env vars via WORDPRESS_CONFIG_EXTRA and redeploy
+#     Add those via WORDPRESS_MULTISITE_CONFIG in Dokploy and redeploy
 #     — do NOT edit wp-config.php manually (it will be overwritten on restart).
 # ---------------------------------------------------------------------------
 if [ -f "${WP_CONFIG}" ]; then
@@ -176,12 +341,15 @@ if [ -f "${WP_CONFIG}" ]; then
             else
                 echo "[KSM] WP_ALLOW_MULTISITE already present in wp-config.php."
             fi
+            apply_multisite_config
             ;;
         disabled|"")
             echo "[KSM] Multisite mode: disabled (single-site)."
+            apply_multisite_config
             ;;
         *)
             echo "[KSM] ⚠️  Unknown WP_MULTISITE_MODE='${WP_MULTISITE_MODE}' — expected: disabled, subfolder, subdomain."
+            apply_multisite_config
             ;;
     esac
 fi

@@ -10,7 +10,8 @@ env = [
   "STACK_SLUG=${stack_slug}",
   "MYSQL_ROOT_PASSWORD=${db_root_password}",
   "MYSQL_PASSWORD=${db_password}",
-  "WORDPRESS_DB_PASSWORD=${db_password}"
+  "WORDPRESS_DB_PASSWORD=${db_password}",
+  "WORDPRESS_PUBLIC_URL=https://${main_domain}"
 ]
 
 [[config.domains]]
