@@ -12,5 +12,9 @@ envsubst '${NGINX_CLIENT_MAX_BODY_SIZE}' < /etc/nginx/templates/default.conf.tem
 
 echo "Nginx configuration generated successfully"
 
+# Validate the generated config before starting nginx
+nginx -t -c /etc/nginx/nginx.conf
+echo "Nginx configuration test passed"
+
 # Execute the main command
 exec "$@"

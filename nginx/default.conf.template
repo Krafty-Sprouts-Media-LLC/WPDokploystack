@@ -95,22 +95,18 @@ server {
     }
 
     # ---------------------------------------------------------------------------
-    # Multisite: legacy upload path compatibility (pre-WordPress 3.5 installs).
-    # Modern WP (3.5+) uses wp-content/uploads/sites/N/ — these rules are
-    # no-ops if those paths don't exist.
+    # Multisite: legacy /blogs.dir internal alias (pre-WordPress 3.5).
+    # Modern WP (3.5+, released 2013) uses wp-content/uploads/sites/N/ and
+    # serves uploads as regular static files via the location / try_files above.
+    # This block is a safe no-op if /blogs.dir does not exist.
+    # NOTE: The /files/ rewrite that used $blogid has been intentionally omitted
+    #       — $blogid is not an nginx variable and causes nginx to reject the config.
     # ---------------------------------------------------------------------------
     location ^~ /blogs.dir {
         internal;
         alias /var/www/html/wp-content/blogs.dir;
         access_log off;
         log_not_found off;
-    }
-
-    location ~ ^/files/(.*)$ {
-        try_files /wp-content/blogs.dir/$blogid/$uri /wp-includes/ms-files.php?file=$1;
-        access_log off;
-        log_not_found off;
-        expires max;
     }
 
     # PHP-FPM configuration

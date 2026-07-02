@@ -8,6 +8,20 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.14.1] - 02/07/2026
+
+### Fixed
+- **Nginx startup crash in v1.14.0** — The `location ~ ^/files/(.*)$` block added for legacy WordPress multisite upload compatibility used `$blogid`, which is not a valid nginx variable. Nginx rejects configs containing undefined variables at startup, causing the health check to fail immediately on every deploy. The block has been removed. Modern WordPress (3.5+, 2013) stores multisite uploads at `wp-content/uploads/sites/N/` and serves them as ordinary static files via the existing `try_files` in `location /` — no special nginx rule is needed.
+- **nginx/docker-entrypoint.sh** — Added `nginx -t` config validation step after `envsubst` so future config errors surface with a clear message immediately instead of manifesting as a silent health-check timeout.
+
+### Changed
+- `nginx/default.conf.template` — Removed the `location ~ ^/files/(.*)$` block; updated `/blogs.dir` comment to clarify it is a safe no-op on all modern installs.
+- `nginx/docker-entrypoint.sh` — `nginx -t` validation added before `exec`.
+- `docs/hosting-guide.md` — Nginx rewrites table updated to remove the `/files/` row; note added explaining modern WP multisite upload path.
+- `meta.json` — Version bumped `1.14.0` → `1.14.1`.
+
+---
+
 ## [1.14.0] - 02/07/2026
 
 ### Added

@@ -874,9 +874,11 @@ The Nginx configuration already includes multisite-safe rewrites for both modes:
 | `rewrite /wp-admin$ … permanent` | Both | Trailing-slash redirect for subsite admin panels |
 | `rewrite ^(/[^/]+)?(/wp-.*)` | Subfolder | Strips `/site1` prefix from `/site1/wp-admin` |
 | `rewrite ^(/[^/]+)?(/.*\.php)` | Subfolder | Strips `/site1` prefix from `/site1/wp-login.php` |
-| `location ^~ /blogs.dir` | Both (legacy) | Pre-WP 3.5 upload path — no-op on modern installs |
+| `location ^~ /blogs.dir` | Both (legacy) | Pre-WP 3.5 internal upload alias — no-op on all modern installs |
 
 All rewrites are guarded by `!-e $request_filename` — they are no-ops on single-site installs.
+
+> **Note:** Modern WordPress multisite (3.5+, 2013) stores uploads at `wp-content/uploads/sites/N/` and serves them as standard static files. No special nginx rules are needed for uploads.
 
 ### Subdomain vs Subfolder — which to choose
 
