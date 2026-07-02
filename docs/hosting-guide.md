@@ -252,6 +252,12 @@ That inner `_data` path is the site root (`wp-admin`, `wp-content`, `wp-includes
 |--------------------|---------|-----------------------------------------------------------------------------|
 | `WP_CRON_INTERVAL` | `300`   | Seconds between each `wp-cron.php` trigger. Lower = more frequent; default is 5 minutes. |
 
+### Multisite Settings
+
+| Variable             | Default    | Description                                                                   |
+|----------------------|------------|-------------------------------------------------------------------------------|
+| `WP_MULTISITE_MODE`  | `disabled` | WordPress Multisite mode. `disabled` = single-site (default). `subfolder` = path-based sub-sites (`/site1`, `/site2`). `subdomain` = subdomain-based sub-sites (`site1.domain.com`). See **WordPress Multisite** section below. |
+
 ### Resource Limits
 
 | Variable                  | Default | Description               |
@@ -420,6 +426,31 @@ The `wp-cron` service, updated compose, and `DISABLE_WP_CRON` enforcement are al
 > **No data risk.** The WP-Cron sidecar is a read-only HTTP client — it only calls `wp-cron.php`. It does not touch any files, volumes, or databases. A failed cron trigger is silently logged and retried in 5 minutes.
 
 > **DISABLE_WP_CRON impact:** Before this change, WP fired pseudo-cron on every page load (if due). After this change, WP never fires cron on its own — the sidecar is solely responsible. If the `wp-cron` container is stopped or crashes, no scheduled jobs run until it restarts. `restart: unless-stopped` protects against this.
+
+---
+
+### Upgrading to v1.14.0 — Existing Installs
+
+v1.14.0 adds WordPress Multisite support via `WP_MULTISITE_MODE`. Existing single-site deployments are **completely unaffected** — the new variable defaults to `disabled`.
+
+#### What changes automatically on Redeploy
+
+| Change | Auto-applied? | Notes |
+|--------|:---:|-------|
+| `WP_MULTISITE_MODE` env var | ✅ Default `disabled` | No action needed for single-site installs |
+| Nginx multisite rewrites | ✅ Yes — v1.14.0+ | Guarded by `!-e` — safe no-ops on single-site |
+| `WP_ALLOW_MULTISITE` enforcement | ✅ Only when `WP_MULTISITE_MODE` is set | Entrypoint Step 4a only acts on `subfolder`/`subdomain` |
+
+#### Option A (One-Click Template) — No action needed for single-site
+
+Your single-site install continues working with zero changes. If you want to **enable multisite**, add `WP_MULTISITE_MODE=subdomain` (or `subfolder`) to your Dokploy **Environment** tab and Redeploy. Then follow the **WordPress Multisite** section in this guide.
+
+#### Option B (GitHub-linked) — Pull and Redeploy
+
+1. In Dokploy → **General** tab → click **Pull**.
+2. Click **Redeploy**.
+
+The updated compose and entrypoint are picked up automatically. Single-site behaviour is unchanged.
 
 ---
 
@@ -825,6 +856,113 @@ If you want to manage WP-Cron yourself (e.g., via a host-level system cron or Cr
 1. Remove or comment out the `wp-cron:` service block in your compose.
 2. Remove `define('DISABLE_WP_CRON', true);` from `WORDPRESS_CONFIG_EXTRA` — or add `DISABLE_WP_CRON=false` to Environment.
 3. Redeploy.
+
+---
+
+## WordPress Multisite
+
+This stack supports WordPress Multisite (Network) with a single environment variable. Both **subfolder** and **subdomain** network types are fully supported.
+
+### How it works
+
+Setting `WP_MULTISITE_MODE` to `subfolder` or `subdomain` causes the custom entrypoint to enforce `WP_ALLOW_MULTISITE=true` in `wp-config.php` via WP-CLI on every container start — the same idempotent pattern used for `DISABLE_WP_CRON`. This is what makes **Tools → Network Setup** appear in WP Admin.
+
+The Nginx configuration already includes multisite-safe rewrites for both modes:
+
+| Rewrite | Mode | Purpose |
+|---------|------|---------|
+| `rewrite /wp-admin$ … permanent` | Both | Trailing-slash redirect for subsite admin panels |
+| `rewrite ^(/[^/]+)?(/wp-.*)` | Subfolder | Strips `/site1` prefix from `/site1/wp-admin` |
+| `rewrite ^(/[^/]+)?(/.*\.php)` | Subfolder | Strips `/site1` prefix from `/site1/wp-login.php` |
+| `location ^~ /blogs.dir` | Both (legacy) | Pre-WP 3.5 upload path — no-op on modern installs |
+
+All rewrites are guarded by `!-e $request_filename` — they are no-ops on single-site installs.
+
+### Subdomain vs Subfolder — which to choose
+
+| | Subfolder | Subdomain |
+|---|---|---|
+| Sub-sites at | `yourdomain.com/site1/` | `site1.yourdomain.com` |
+| DNS required | Single A record | **Wildcard DNS** `*.yourdomain.com` |
+| Traefik config | Standard | Wildcard domain rule required |
+| Can convert later | ✅ Yes (WP CLI) | ✅ Yes (WP CLI) |
+| Install on existing WP? | ✅ Yes | ✅ Yes |
+
+> **Important for subdomain mode:** You **must** add a wildcard DNS record (`*.yourdomain.com → your server IP`) at your DNS provider **before** the Network Setup wizard runs. Without wildcard DNS, new subsites will not resolve. In Dokploy, you also need a wildcard domain entry (`*.yourdomain.com`) pointing to the nginx service on port 80.
+
+### Phase 1 — Enable Network Setup
+
+1. Add to Dokploy **Environment**:
+   ```env
+   WP_MULTISITE_MODE=subdomain
+   # or: WP_MULTISITE_MODE=subfolder
+   ```
+2. Click **Redeploy**.
+3. Check **Logs → wordpress** — you should see:
+   ```
+   [KSM] Multisite mode: subdomain — enforcing WP_ALLOW_MULTISITE...
+   [KSM] ✅ WP_ALLOW_MULTISITE set in wp-config.php (Tools → Network Setup now available).
+   ```
+4. Open WP Admin in a **private/incognito window** (bypasses full-page cache) → **Tools → Network Setup**.
+
+### Phase 2 — Run the Network Setup Wizard
+
+1. In **Tools → Network Setup**, choose your network type (must match `WP_MULTISITE_MODE`).
+2. Enter a **Network Title** and **Network Admin Email**.
+3. Click **Install**.
+4. WordPress displays two blocks of code. **Do not** paste these directly into `wp-config.php` — the entrypoint manages that file. Instead:
+
+**Add the WordPress-generated constants to `WORDPRESS_CONFIG_EXTRA`** in Dokploy Environment. They look like this (values will differ for your site):
+
+```env
+WORDPRESS_CONFIG_EXTRA=
+    define('WP_REDIS_HOST', 'redis');
+    define('WP_REDIS_PORT', 6379);
+    define('WP_CACHE', true);
+    define('MC_STORAGE_HOST', 'redis');
+    define('MC_STORAGE_PORT', 6379);
+    define('MC_STORAGE_DB', 1);
+    define('DISABLE_WP_CRON', true);
+    define('MULTISITE', true);
+    define('SUBDOMAIN_INSTALL', true);
+    define('DOMAIN_CURRENT_SITE', 'yourdomain.com');
+    define('PATH_CURRENT_SITE', '/');
+    define('SITE_ID_CURRENT_SITE', 1);
+    define('BLOG_ID_CURRENT_SITE', 1);
+```
+
+> For subfolder mode, `SUBDOMAIN_INSTALL` is `false` and WordPress may also add `define('MULTISITE_COOKIE_PATH', '/')` and similar. Copy **exactly** what WordPress generated in the wizard — the values are specific to your install.
+
+5. Click **Redeploy**.
+6. Log back into WP Admin — you now have a **My Sites** menu and **Network Admin** panel.
+
+### Phase 3 — Wildcard domain in Dokploy (subdomain mode only)
+
+1. In Dokploy → **Domains** tab of your Compose service, add:
+   - **Domain:** `*.yourdomain.com`
+   - **Service:** `nginx`
+   - **Port:** `80`
+2. Click **Reload**.
+
+Traefik will now route all subdomain requests to the nginx container, which passes them to WordPress. WordPress uses the `HTTP_HOST` header to determine which subsite to serve.
+
+### Caching compatibility
+
+Both Redis Object Cache and MilliCache are **fully compatible** with multisite. MilliCache stores full-page cache per unique URL, so `site1.yourdomain.com/` and `site2.yourdomain.com/` are cached independently. No additional configuration is required.
+
+### Creating sub-sites
+
+Once Network Setup is complete, go to **Network Admin → Sites → Add New**. For subdomain mode, enter just the subdomain prefix (e.g. `site1` for `site1.yourdomain.com`).
+
+### Disabling Multisite
+
+To revert to single-site:
+
+1. Change `WP_MULTISITE_MODE=disabled` in Dokploy Environment.
+2. Remove the multisite constants (`MULTISITE`, `SUBDOMAIN_INSTALL`, etc.) from `WORDPRESS_CONFIG_EXTRA`.
+3. Redeploy.
+
+> **Warning:** Reverting multisite after sub-sites have been created will make those sub-sites inaccessible. Back up the database before reverting.
 
 ---
 

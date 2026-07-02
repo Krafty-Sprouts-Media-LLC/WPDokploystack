@@ -176,6 +176,12 @@ Result on the VPS:
 |----------|---------|-------------|
 | `WP_CRON_INTERVAL` | `300` | Seconds between each `wp-cron.php` trigger (default: 5 minutes). `DISABLE_WP_CRON=true` is set automatically in `wp-config.php` by the entrypoint — the sidecar is the sole scheduler. |
 
+### Multisite Settings
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `WP_MULTISITE_MODE` | `disabled` | WordPress Multisite mode. `disabled` = single-site (default, no change). `subfolder` = sub-sites at `/site1/`. `subdomain` = sub-sites at `site1.yourdomain.com`. See [docs/hosting-guide.md](docs/hosting-guide.md#wordpress-multisite) for the full setup walkthrough. |
+
 ### Resource Limits (No Rebuild Required)
 
 | Variable | Default | Description |
@@ -287,6 +293,13 @@ NGINX_CLIENT_MAX_BODY_SIZE=512M
 3. Verify `DISABLE_WP_CRON` is in wp-config: `grep DISABLE_WP_CRON /var/www/html/wp-config.php` inside the WordPress container
 4. Check WordPress container startup logs for `[KSM] ✅ DISABLE_WP_CRON set in wp-config.php`
 5. To manually trigger all due events: `wp cron event run --due-now --allow-root`
+
+### Tools → Network Setup not showing (Multisite)
+
+1. Confirm `WP_MULTISITE_MODE=subdomain` (or `subfolder`) is set in Dokploy **Environment** and the stack has been redeployed
+2. Check WordPress container logs for `[KSM] ✅ WP_ALLOW_MULTISITE set in wp-config.php` — if missing, the entrypoint could not find `wp-config.php` yet (run after WordPress setup wizard)
+3. Open WP Admin in a **private/incognito window** — MilliCache full-page cache may be serving a cached admin page that predates the multisite enable
+4. See [docs/hosting-guide.md](docs/hosting-guide.md#wordpress-multisite) for the full two-phase setup guide
 
 ## Smoke Testing
 
