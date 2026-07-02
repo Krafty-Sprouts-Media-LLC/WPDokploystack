@@ -5,7 +5,7 @@
  * Description: Must-use plugin for KSM WPDokploystack. Activates Redis Object
  *              Cache and MilliCache on the first web request after WordPress
  *              installation, so caching works without a manual redeploy.
- * Version:     1.0.0
+ * Version:     1.1.0
  * Author:      Krafty Sprouts Media LLC
  * Author URI:  https://kraftysprouts.media
  *
@@ -15,6 +15,27 @@
  */
 
 defined( 'ABSPATH' ) || exit;
+
+/**
+ * Whether WordPress Network Setup is in progress (multisite allowed, not yet installed).
+ *
+ * The stack entrypoint sets WP_ALLOW_MULTISITE before the network exists. Cache plugins
+ * must stay deactivated until Network Setup completes — WordPress requires this.
+ *
+ * @since 1.1.0
+ * @return bool
+ */
+function ksm_cache_bootstrap_is_network_setup_pending() {
+	if ( ! defined( 'WP_ALLOW_MULTISITE' ) || ! WP_ALLOW_MULTISITE ) {
+		return false;
+	}
+
+	if ( defined( 'MULTISITE' ) && MULTISITE ) {
+		return false;
+	}
+
+	return true;
+}
 
 /**
  * Bootstrap cache plugins if installed but not yet active.
@@ -38,6 +59,10 @@ function ksm_cache_bootstrap_run() {
 	}
 
 	$ran = true;
+
+	if ( ksm_cache_bootstrap_is_network_setup_pending() ) {
+		return;
+	}
 
 	if ( ! function_exists( 'is_plugin_active' ) ) {
 		require_once ABSPATH . 'wp-admin/includes/plugin.php';

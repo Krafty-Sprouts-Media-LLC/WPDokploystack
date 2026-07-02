@@ -8,6 +8,30 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [1.14.5] - 02/07/2026
+
+### Fixed
+- **Multisite Network Setup blocked by auto-activated cache plugins** — `ksm-cache-bootstrap.php` no longer re-activates Redis Object Cache and MilliCache while WordPress Network Setup is in progress (`WP_ALLOW_MULTISITE` true, `MULTISITE` not yet defined). Plugins can be deactivated in wp-admin and stay off until the network is created and `WORDPRESS_MULTISITE_CONFIG` is applied on redeploy.
+
+### Changed
+- `docs/hosting-guide.md` — Network Setup Phase 2 documents plugin deactivation and the bootstrap pause behaviour.
+- `tests/multisite-regression-test.sh` — Assert cache bootstrap multisite pause guard exists.
+- `meta.json` — Version bumped `1.14.4` → `1.14.5`.
+
+---
+
+## [1.14.4] - 02/07/2026
+
+### Added
+- `docs/dokploypress-migration-guide.md` — Phased migration plan for rebranding to DokployPress: identifier map, maintainer checklists (Phases 1–4), existing-install upgrade path, backup/rollback, and FAQ. Documents that repo/display renames do not affect Docker volumes or WordPress data when GHCR image paths and `STACK_SLUG` stay stable.
+
+### Changed
+- `README.md` — Link to the DokployPress migration guide and planned rebrand notice.
+- `docs/hosting-guide.md` — Link to the DokployPress migration guide.
+- `meta.json` — Version bumped `1.14.3` → `1.14.4`.
+
+---
+
 ## [1.14.3] - 02/07/2026
 
 ### Fixed

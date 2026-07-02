@@ -12,6 +12,8 @@ This guide is adapted from Al-Mamun Talukder's excellent article on hosting Word
 
 This documentation captures those steps and supplements them with additional details for our KSM WPDokploystack deployment.
 
+For the planned **DokployPress** rebrand (repo rename, identity, and upgrade safety for existing installs), see [dokploypress-migration-guide.md](dokploypress-migration-guide.md).
+
 ---
 
 ## What Is Dokploy?
@@ -916,10 +918,13 @@ All rewrites are guarded by `!-e $request_filename` — they are no-ops on singl
 
 ### Phase 2 — Run the Network Setup Wizard
 
-1. In **Tools → Network Setup**, choose your network type (must match `WP_MULTISITE_MODE`).
-2. Enter a **Network Title** and **Network Admin Email**.
-3. Click **Install**.
-4. WordPress displays two blocks of code. **Do not** paste these directly into `wp-config.php` — the entrypoint manages that file. Instead:
+WordPress asks you to **deactivate all plugins** before creating the network. On this stack, Redis Object Cache and MilliCache are normally auto-activated by the `ksm-cache-bootstrap` mu-plugin. **From stack version 1.14.5 onward**, that bootstrap is paused automatically while Network Setup is in progress (`WP_ALLOW_MULTISITE` is true but `MULTISITE` is not yet defined), so you can deactivate plugins in wp-admin and they will stay off.
+
+1. In **Plugins**, deactivate **Redis Object Cache** and **MilliCache** (and any other active plugins).
+2. In **Tools → Network Setup**, choose your network type (must match `WP_MULTISITE_MODE`).
+3. Enter a **Network Title** and **Network Admin Email**.
+4. Click **Install**.
+5. WordPress displays two blocks of code. **Do not** paste these directly into `wp-config.php` — the entrypoint manages that file. Instead:
 
 **Add only the WordPress-generated multisite constants to `WORDPRESS_MULTISITE_CONFIG`** in Dokploy Environment. They look like this (values will differ for your site):
 
@@ -935,8 +940,25 @@ WORDPRESS_MULTISITE_CONFIG=
 
 > For subfolder mode, `SUBDOMAIN_INSTALL` is `false` and WordPress may also add `define('MULTISITE_COOKIE_PATH', '/')` and similar. Copy **exactly** what WordPress generated in the wizard — the values are specific to your install.
 
-5. Click **Redeploy**.
-6. Log back into WP Admin — you now have a **My Sites** menu and **Network Admin** panel.
+6. Click **Redeploy**.
+7. Log back into WP Admin — you now have a **My Sites** menu and **Network Admin** panel.
+
+#### Network Setup: plugins keep reactivating (stack before 1.14.5)
+
+If Redis Object Cache and MilliCache turn back on immediately after you deactivate them, the cache bootstrap mu-plugin is re-activating them on every page load. Use either approach:
+
+**Option A — Temporary disable bootstrap (no image rebuild):**
+
+```bash
+docker exec -it <wordpress-container-name> bash
+mv /var/www/html/wp-content/mu-plugins/ksm-cache-bootstrap.php \
+   /var/www/html/wp-content/mu-plugins/ksm-cache-bootstrap.php.off
+wp plugin deactivate redis-cache millicache --allow-root --path=/var/www/html
+```
+
+Then deactivate any remaining plugins in wp-admin, complete **Tools → Network Setup**, add `WORDPRESS_MULTISITE_CONFIG` in Dokploy, and **Redeploy**. The entrypoint restores the mu-plugin from the image on redeploy.
+
+**Option B — Upgrade to stack 1.14.5+** (bootstrap pauses automatically during Network Setup), then deactivate plugins in wp-admin and continue the wizard.
 
 ### If WP Admin redirects to `https://nginx/wp-login.php`
 

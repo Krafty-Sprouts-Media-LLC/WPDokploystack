@@ -4,6 +4,8 @@ Production-ready WordPress deployment stack optimized for Dokploy with Redis obj
 
 Forked and extended from [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp) by [Al-Mamun Talukder](https://itsmereal.com).
 
+> **Planned rebrand:** This stack will adopt the **DokployPress** product name. Existing deployments, data, and GHCR image updates are unaffected. See [docs/dokploypress-migration-guide.md](docs/dokploypress-migration-guide.md) for the phased plan.
+
 ## Stack Components
 
 | Service | Description |
@@ -307,6 +309,14 @@ NGINX_CLIENT_MAX_BODY_SIZE=512M
 2. Check WordPress container logs for `[KSM] ✅ WP_ALLOW_MULTISITE set in wp-config.php` — if missing, the entrypoint could not find `wp-config.php` yet (run after WordPress setup wizard)
 3. Open WP Admin in a **private/incognito window** — MilliCache full-page cache may be serving a cached admin page that predates the multisite enable
 4. See [docs/hosting-guide.md](docs/hosting-guide.md#wordpress-multisite) for the full two-phase setup guide
+
+### Tools → Network Setup warns about active plugins
+
+Redis Object Cache and MilliCache are auto-activated by the stack. During Network Setup, WordPress wants all plugins deactivated first.
+
+1. **Stack 1.14.5+:** Deactivate plugins in **Plugins** — they stay off until `WORDPRESS_MULTISITE_CONFIG` is applied and the network exists.
+2. **Older stack:** Temporarily disable the bootstrap mu-plugin — see [hosting-guide.md](docs/hosting-guide.md#network-setup-plugins-keep-reactivating-stack-before-1145).
+3. Complete Network Setup, add `WORDPRESS_MULTISITE_CONFIG` in Dokploy, redeploy — cache plugins reactivate automatically after the network is live.
 
 ### WordPress redirects to `https://nginx/wp-login.php`
 

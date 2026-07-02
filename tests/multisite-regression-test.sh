@@ -50,6 +50,7 @@ assert_file_contains "${ROOT_DIR}/wordpress/docker-entrypoint-custom.sh" 'apply_
 assert_file_contains "${ROOT_DIR}/wordpress/docker-entrypoint-custom.sh" 'BEGIN KSM WORDPRESS_MULTISITE_CONFIG' "Entrypoint writes managed multisite block"
 assert_file_contains "${ROOT_DIR}/wordpress/ksm-migration-fixer.php" 'is_internal_request' "Migration fixer detects internal requests"
 assert_file_contains "${ROOT_DIR}/wordpress/ksm-migration-fixer.php" 'wp_doing_cron' "Migration fixer skips wp-cron requests"
+assert_file_contains "${ROOT_DIR}/wordpress/ksm-cache-bootstrap.php" 'ksm_cache_bootstrap_is_network_setup_pending' "Cache bootstrap pauses during multisite network setup"
 assert_file_contains "${ROOT_DIR}/docs/hosting-guide.md" 'WORDPRESS_MULTISITE_CONFIG=' "Hosting guide documents multisite config env"
 assert_file_contains "${ROOT_DIR}/README.md" 'redirects to `https://nginx/wp-login.php`' "README documents nginx login redirect recovery"
 
