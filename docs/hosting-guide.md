@@ -16,8 +16,6 @@ This documentation captures those steps and supplements them with additional det
 
 DokployPress is maintained by Krafty Sprouts Media LLC and is **not affiliated with or endorsed by Dokploy**.
 
-For upgrading an existing 1.x install (`dokploy-wp-*` images), see [upgrade-to-2.0.0.md](upgrade-to-2.0.0.md).
-
 ---
 
 ## What Is Dokploy?
@@ -919,8 +917,8 @@ All rewrites are guarded by `!-e $request_filename` — they are no-ops on singl
 2. Click **Redeploy**.
 3. Check **Logs → wordpress** — you should see:
    ```
-   [KSM] Multisite mode: subdomain — enforcing WP_ALLOW_MULTISITE...
-   [KSM] ✅ WP_ALLOW_MULTISITE set in wp-config.php (Tools → Network Setup now available).
+   [DokployPress] Multisite mode: subdomain — enforcing WP_ALLOW_MULTISITE...
+   [DokployPress] ✅ WP_ALLOW_MULTISITE set in wp-config.php (Tools → Network Setup now available).
    ```
 4. Open WP Admin in a **private/incognito window** (bypasses full-page cache) → **Tools → Network Setup**.
 

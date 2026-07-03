@@ -48,7 +48,7 @@ assert_file_contains "${ROOT_DIR}/blueprints/dokploypress/docker-compose.yml" 'd
 assert_file_contains "${ROOT_DIR}/template.toml" 'WORDPRESS_PUBLIC_URL=https://${main_domain}' "Root template injects public URL"
 assert_file_contains "${ROOT_DIR}/wordpress/docker-entrypoint-custom.sh" 'repair_internal_site_url' "Entrypoint repairs internal site URLs"
 assert_file_contains "${ROOT_DIR}/wordpress/docker-entrypoint-custom.sh" 'apply_multisite_config' "Entrypoint applies multisite config env"
-assert_file_contains "${ROOT_DIR}/wordpress/docker-entrypoint-custom.sh" 'BEGIN KSM WORDPRESS_MULTISITE_CONFIG' "Entrypoint writes managed multisite block"
+assert_file_contains "${ROOT_DIR}/wordpress/docker-entrypoint-custom.sh" 'BEGIN DOKPLOYPRESS WORDPRESS_MULTISITE_CONFIG' "Entrypoint writes managed multisite block"
 assert_file_contains "${ROOT_DIR}/wordpress/dokploypress-migration-fixer.php" 'is_internal_request' "Migration fixer detects internal requests"
 assert_file_contains "${ROOT_DIR}/wordpress/dokploypress-migration-fixer.php" 'wp_doing_cron' "Migration fixer skips wp-cron requests"
 assert_file_contains "${ROOT_DIR}/wordpress/dokploypress-cache-bootstrap.php" 'dokploypress_cache_bootstrap_is_network_setup_pending' "Cache bootstrap pauses during multisite network setup"

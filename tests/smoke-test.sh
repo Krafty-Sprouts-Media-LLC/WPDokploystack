@@ -83,7 +83,7 @@ info "Installing WordPress core (if not already installed)..."
 if ! ${WP} wp core is-installed --allow-root 2>/dev/null; then
 	${WP} wp core install \
 		--url="${BASE_URL}" \
-		--title="KSM Smoke Test" \
+		--title="DokployPress Smoke Test" \
 		--admin_user=admin \
 		--admin_password='SmokeTestAdmin123!' \
 		--admin_email=smoke@test.local \

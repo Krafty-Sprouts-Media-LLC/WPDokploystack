@@ -54,7 +54,7 @@ opcache.fast_shutdown          = 1
 opcache.enable_cli             = 0
 EOF
 
-echo "[KSM] PHP settings configured:"
+echo "[DokployPress] PHP settings configured:"
 echo "  upload_max_filesize : ${PHP_UPLOAD_MAX_FILESIZE:-256M}"
 echo "  post_max_size       : ${PHP_POST_MAX_SIZE:-256M}"
 echo "  memory_limit        : ${PHP_MEMORY_LIMIT:-256M}"
@@ -134,7 +134,7 @@ repair_internal_site_url() {
     public_url="$(normalize_public_url "${WORDPRESS_PUBLIC_URL}")"
 
     if [ -z "${public_url}" ]; then
-        echo "[KSM] ⚠️  WORDPRESS_PUBLIC_URL must start with http:// or https://; skipping site URL repair."
+        echo "[DokployPress] ⚠️  WORDPRESS_PUBLIC_URL must start with http:// or https://; skipping site URL repair."
         return 0
     fi
 
@@ -147,14 +147,14 @@ repair_internal_site_url() {
 
         if is_internal_url "${current_url}"; then
             wp option update "${option}" "${public_url}" --path="${WP_PATH}" --allow-root >/dev/null
-            echo "[KSM] ✅ Repaired ${option}: ${current_url:-empty} → ${public_url}"
+            echo "[DokployPress] ✅ Repaired ${option}: ${current_url:-empty} → ${public_url}"
             repaired=1
         fi
     done
 
     if [ "${repaired}" = "1" ]; then
         wp cache flush --path="${WP_PATH}" --allow-root >/dev/null 2>&1 || true
-        echo "[KSM] ✅ WordPress cache flushed after site URL repair."
+        echo "[DokployPress] ✅ WordPress cache flushed after site URL repair."
     fi
 }
 
@@ -176,8 +176,8 @@ apply_multisite_config() {
     php -r '
         $config_file      = $argv[1] ?? "";
         $multisite_config = trim($argv[2] ?? "");
-        $begin            = "// BEGIN KSM WORDPRESS_MULTISITE_CONFIG";
-        $end              = "// END KSM WORDPRESS_MULTISITE_CONFIG";
+        $begin            = "// BEGIN DOKPLOYPRESS WORDPRESS_MULTISITE_CONFIG";
+        $end              = "// END DOKPLOYPRESS WORDPRESS_MULTISITE_CONFIG";
 
         if ( "" === $config_file || ! is_readable( $config_file ) || ! is_writable( $config_file ) ) {
             exit( 1 );
@@ -218,9 +218,9 @@ apply_multisite_config() {
     ' "${WP_CONFIG}" "${multisite_config}"
 
     if [ -n "${multisite_config}" ]; then
-        echo "[KSM] ✅ WORDPRESS_MULTISITE_CONFIG applied to wp-config.php."
+        echo "[DokployPress] ✅ WORDPRESS_MULTISITE_CONFIG applied to wp-config.php."
     else
-        echo "[KSM] WORDPRESS_MULTISITE_CONFIG not active; managed multisite config block removed if present."
+        echo "[DokployPress] WORDPRESS_MULTISITE_CONFIG not active; managed multisite config block removed if present."
     fi
 }
 
@@ -232,10 +232,10 @@ apply_multisite_config() {
 #    in the volume before php-fpm starts — no separate entrypoint call needed.
 # ---------------------------------------------------------------------------
 if [ ! -f "${WP_PATH}/wp-includes/version.php" ]; then
-    echo "[KSM] Fresh volume — copying WordPress core files..."
+    echo "[DokployPress] Fresh volume — copying WordPress core files..."
     cp -a /usr/src/wordpress/. "${WP_PATH}/"
     chown -R www-data:www-data "${WP_PATH}"
-    echo "[KSM] ✅ WordPress core copied (includes bundled mu-plugins)."
+    echo "[DokployPress] ✅ WordPress core copied (includes bundled mu-plugins)."
 fi
 
 # ---------------------------------------------------------------------------
@@ -251,9 +251,9 @@ if [ -f "${WP_CONFIG}" ]; then
 
     if [ -n "${CURRENT_DB_HOST}" ] && [ "${CURRENT_DB_HOST}" != "${EXPECTED_DB_HOST}" ]; then
         echo ""
-        echo "[KSM] ⚠️  wp-config.php mismatch detected!"
-        echo "[KSM]    Found DB_HOST='${CURRENT_DB_HOST}' — expected '${EXPECTED_DB_HOST}'"
-        echo "[KSM]    Auto-correcting for Docker internal network..."
+        echo "[DokployPress] ⚠️  wp-config.php mismatch detected!"
+        echo "[DokployPress]    Found DB_HOST='${CURRENT_DB_HOST}' — expected '${EXPECTED_DB_HOST}'"
+        echo "[DokployPress]    Auto-correcting for Docker internal network..."
 
         # Fix database connection settings
         wp config set DB_HOST     "${EXPECTED_DB_HOST}"                  --path="${WP_PATH}" --allow-root
@@ -274,11 +274,11 @@ if [ -f "${WP_CONFIG}" ]; then
             fi
         done
 
-        echo "[KSM] ✅ wp-config.php corrected successfully."
+        echo "[DokployPress] ✅ wp-config.php corrected successfully."
         echo ""
         MIGRATION_DETECTED=1
     else
-        echo "[KSM] wp-config.php DB_HOST looks correct (${CURRENT_DB_HOST:-not yet written})."
+        echo "[DokployPress] wp-config.php DB_HOST looks correct (${CURRENT_DB_HOST:-not yet written})."
     fi
 
     # URL constants from the source host override database values — remove them
@@ -286,7 +286,7 @@ if [ -f "${WP_CONFIG}" ]; then
     for constant in WP_HOME WP_SITEURL; do
         if wp config has "${constant}" --path="${WP_PATH}" --allow-root 2>/dev/null; then
             wp config delete "${constant}" --path="${WP_PATH}" --allow-root
-            echo "[KSM] ✅ Removed ${constant} from wp-config.php (stack uses database URLs)."
+            echo "[DokployPress] ✅ Removed ${constant} from wp-config.php (stack uses database URLs)."
             MIGRATION_DETECTED=1
         fi
     done
@@ -310,9 +310,9 @@ repair_internal_site_url
 if [ -f "${WP_CONFIG}" ]; then
     if ! wp config has DISABLE_WP_CRON --path="${WP_PATH}" --allow-root 2>/dev/null; then
         wp config set DISABLE_WP_CRON true --path="${WP_PATH}" --allow-root --raw
-        echo "[KSM] ✅ DISABLE_WP_CRON set in wp-config.php (WP-Cron sidecar manages scheduling)."
+        echo "[DokployPress] ✅ DISABLE_WP_CRON set in wp-config.php (WP-Cron sidecar manages scheduling)."
     else
-        echo "[KSM] DISABLE_WP_CRON already present in wp-config.php."
+        echo "[DokployPress] DISABLE_WP_CRON already present in wp-config.php."
     fi
 fi
 
@@ -334,21 +334,21 @@ fi
 if [ -f "${WP_CONFIG}" ]; then
     case "${WP_MULTISITE_MODE:-disabled}" in
         subfolder|subdomain)
-            echo "[KSM] Multisite mode: ${WP_MULTISITE_MODE} — enforcing WP_ALLOW_MULTISITE..."
+            echo "[DokployPress] Multisite mode: ${WP_MULTISITE_MODE} — enforcing WP_ALLOW_MULTISITE..."
             if ! wp config has WP_ALLOW_MULTISITE --path="${WP_PATH}" --allow-root 2>/dev/null; then
                 wp config set WP_ALLOW_MULTISITE true --path="${WP_PATH}" --allow-root --raw
-                echo "[KSM] ✅ WP_ALLOW_MULTISITE set in wp-config.php (Tools → Network Setup now available)."
+                echo "[DokployPress] ✅ WP_ALLOW_MULTISITE set in wp-config.php (Tools → Network Setup now available)."
             else
-                echo "[KSM] WP_ALLOW_MULTISITE already present in wp-config.php."
+                echo "[DokployPress] WP_ALLOW_MULTISITE already present in wp-config.php."
             fi
             apply_multisite_config
             ;;
         disabled|"")
-            echo "[KSM] Multisite mode: disabled (single-site)."
+            echo "[DokployPress] Multisite mode: disabled (single-site)."
             apply_multisite_config
             ;;
         *)
-            echo "[KSM] ⚠️  Unknown WP_MULTISITE_MODE='${WP_MULTISITE_MODE}' — expected: disabled, subfolder, subdomain."
+            echo "[DokployPress] ⚠️  Unknown WP_MULTISITE_MODE='${WP_MULTISITE_MODE}' — expected: disabled, subfolder, subdomain."
             apply_multisite_config
             ;;
     esac
@@ -371,7 +371,7 @@ deploy_mu_plugin() {
     local dest="${MU_PLUGINS_DIR}/${dest_name}"
     cp "${src}" "${dest}"
     chown www-data:www-data "${dest}"
-    echo "[KSM] ✅ ${dest_name} deployed to mu-plugins/."
+    echo "[DokployPress] ✅ ${dest_name} deployed to mu-plugins/."
 }
 
 remove_legacy_mu_plugin() {
@@ -380,7 +380,7 @@ remove_legacy_mu_plugin() {
 
     if [ -f "${legacy_path}" ]; then
         rm -f "${legacy_path}"
-        echo "[KSM] ✅ Removed legacy mu-plugin ${legacy_name}."
+        echo "[DokployPress] ✅ Removed legacy mu-plugin ${legacy_name}."
     fi
 }
 
@@ -402,7 +402,7 @@ fi
 if [ "${MIGRATION_DETECTED:-0}" = "1" ] && [ ! -f "${MARKER_FILE}" ]; then
     touch "${MARKER_FILE}"
     chown www-data:www-data "${MARKER_FILE}"
-    echo "[KSM] ✅ Migration detected — ksm-migration-pending.txt marker created for fixer."
+    echo "[DokployPress] ✅ Migration detected — ksm-migration-pending.txt marker created for fixer."
 fi
 
 # ---------------------------------------------------------------------------

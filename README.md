@@ -8,8 +8,6 @@ Production-ready WordPress deployment stack for Dokploy with Redis object cache,
 
 Forked and extended from [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp) by [Al-Mamun Talukder](https://itsmereal.com).
 
-> **Upgrading from 1.x?** See [docs/upgrade-to-2.0.0.md](docs/upgrade-to-2.0.0.md) — swap three image lines, keep `STACK_SLUG`, redeploy. No data loss.
-
 ## Stack Components
 
 | Service | Description |
@@ -240,16 +238,15 @@ When using the optional SFTP container, the WordPress root is `/public_html` in 
 
 Any variable you add in Dokploy's **Environment** tab is automatically forwarded into the WordPress container's process environment — no `docker-compose.yml` change or image rebuild required. This lets theme- or plugin-specific variables work immediately via PHP's `getenv()`, without this repo needing to allowlist every one individually.
 
-Example — a theme with a GitHub release update-checker that reads its token via `getenv('KS_GITHUB_UPDATE_TOKEN')`:
+Example — a theme or plugin that reads its own config via `getenv('YOUR_VARIABLE_NAME')` (e.g. a license key or a private update-checker token):
 
 ```env
-KS_GITHUB_UPDATE_TOKEN=github_pat_xxx
-KS_GITHUB_UPDATE_REPO=YourOrg/your-theme
+YOUR_VARIABLE_NAME=some-value
 ```
 
 1. Add the variable(s) in Dokploy's **Environment** tab
 2. Redeploy the stack
-3. Verify it reached the container: **Dokploy → wordpress container → Terminal** → `printenv | grep KS_GITHUB_UPDATE_TOKEN` (or `wp theme list` / the plugin's own update-check UI in **Appearance → Themes**)
+3. Verify it reached the container: **Dokploy → wordpress container → Terminal** → `printenv | grep YOUR_VARIABLE_NAME` (or check the theme/plugin's own update-check UI in **Appearance → Themes** / **Plugins**)
 
 **Note:** Dokploy's Environment tab is shared across every service in the stack (nginx, wordpress, db, redis, etc.), and every entry is forwarded to the WordPress container specifically. Don't put secrets there that WordPress/PHP code shouldn't be able to read via `getenv()`.
 
@@ -333,13 +330,13 @@ NGINX_CLIENT_MAX_BODY_SIZE=512M
 1. In Dokploy → **Logs** → select the `wp-cron` container — you should see `[timestamp] wp-cron triggered` every 5 minutes
 2. If you see `wp-cron request failed`, nginx may still be starting — it retries automatically
 3. Verify `DISABLE_WP_CRON` is in wp-config: `grep DISABLE_WP_CRON /var/www/html/wp-config.php` inside the WordPress container
-4. Check WordPress container startup logs for `[KSM] ✅ DISABLE_WP_CRON set in wp-config.php`
+4. Check WordPress container startup logs for `[DokployPress] ✅ DISABLE_WP_CRON set in wp-config.php`
 5. To manually trigger all due events: `wp cron event run --due-now --allow-root`
 
 ### Tools → Network Setup not showing (Multisite)
 
 1. Confirm `WP_MULTISITE_MODE=subdomain` (or `subfolder`) is set in Dokploy **Environment** and the stack has been redeployed
-2. Check WordPress container logs for `[KSM] ✅ WP_ALLOW_MULTISITE set in wp-config.php` — if missing, the entrypoint could not find `wp-config.php` yet (run after WordPress setup wizard)
+2. Check WordPress container logs for `[DokployPress] ✅ WP_ALLOW_MULTISITE set in wp-config.php` — if missing, the entrypoint could not find `wp-config.php` yet (run after WordPress setup wizard)
 3. Open WP Admin in a **private/incognito window** — MilliCache full-page cache may be serving a cached admin page that predates the multisite enable
 4. See [docs/hosting-guide.md](docs/hosting-guide.md#wordpress-multisite) for the full two-phase setup guide
 

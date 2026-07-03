@@ -10,6 +10,20 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [2.1.1] - 03/07/2026
+
+### Changed
+- `wordpress/docker-entrypoint-custom.sh` — Container startup log lines use the `[DokployPress]` prefix instead of the legacy `[KSM]` prefix. Purely cosmetic (stdout only, never persisted) — matched in `README.md` and `docs/hosting-guide.md` troubleshooting examples.
+- `wordpress/docker-entrypoint-custom.sh` — The managed `wp-config.php` block for `WORDPRESS_MULTISITE_CONFIG` now uses `// BEGIN/END DOKPLOYPRESS WORDPRESS_MULTISITE_CONFIG` markers instead of `// BEGIN/END KSM WORDPRESS_MULTISITE_CONFIG`. **Operator note:** any already-deployed multisite site with `WORDPRESS_MULTISITE_CONFIG` set will get a second (harmless, duplicate) block inserted into `wp-config.php` on its next redeploy, since the entrypoint no longer recognizes the old marker to clean it up. Both blocks define the same constants with the same values, so PHP logs a non-fatal "constant already defined" notice per constant — no functional impact, no data loss. Safe to manually remove the stale old-marked block afterward.
+- `tests/multisite-regression-test.sh` — Assertion updated to match the new multisite marker text.
+- `tests/smoke-test.sh` — Smoke-test WordPress install title no longer references `KSM`.
+- `README.md`, `docs/hosting-guide.md` — Removed the "Upgrading from 1.x?" callouts pointing at the retired migration docs (see Removed, below).
+
+### Removed
+- `docs/dokploypress-migration-guide.md` and `docs/upgrade-to-2.0.0.md` — Both covered the completed 1.x → 2.0.0 rebrand/image-path migration; nothing in them is relevant to current installs.
+
+---
+
 ## [2.1.0] - 03/07/2026
 
 ### Added
