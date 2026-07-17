@@ -15,7 +15,7 @@ set -e
 WORDPRESS_PATH="/var/www/html"
 PLUGINS_PATH="${WORDPRESS_PATH}/wp-content/plugins"
 REDIS_PLUGIN_URL="https://downloads.wordpress.org/plugin/redis-cache.latest-stable.zip"
-MILLICACHE_PLUGIN_URL="https://github.com/MilliPress/MilliCache/releases/download/v1.6.2/millicache.zip"
+MILLICACHE_PLUGIN_URL="https://github.com/MilliPress/MilliCache/releases/download/v1.7.2/millicache.zip"
 
 echo "=== DokployPress Cache Plugin Installer ==="
 

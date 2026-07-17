@@ -10,6 +10,13 @@ Upstream project: [itsmereal/dokploy-wp](https://github.com/itsmereal/dokploy-wp
 
 ---
 
+## [2.1.2] - 16/07/2026
+
+### Changed
+- `plugin-installer/install-plugins.sh` — Bumped the pinned MilliCache release from `v1.6.2` to `v1.7.2`. The installer is a one-shot sidecar that skips re-downloading if `wp-content/plugins/millicache/millicache.php` already exists, so this only changes what **fresh** deployments install — already-provisioned sites need a manual `wp plugin install https://github.com/MilliPress/MilliCache/releases/download/v1.7.2/millicache.zip --force --allow-root` (plus `wp millicache drop --allow-root`) to pick up the new version.
+
+---
+
 ## [2.1.1] - 03/07/2026
 
 ### Changed
