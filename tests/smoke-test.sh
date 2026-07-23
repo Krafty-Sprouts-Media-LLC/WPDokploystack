@@ -132,8 +132,8 @@ pass "wp millicache test OK"
 info "Running wp millicache status..."
 MILLI_STATUS="$(${WP} wp millicache status --allow-root 2>&1)"
 echo "${MILLI_STATUS}"
-echo "${MILLI_STATUS}" | grep -qi "storage_connected.*yes\|connected.*yes" || \
-	echo "${MILLI_STATUS}" | grep -qi "yes"
+echo "${MILLI_STATUS}" | grep -qiE "storage[[:space:]]+connected" || \
+	fail "MilliCache storage not connected (see wp millicache status output above)"
 pass "wp millicache status OK"
 
 info "Testing HTTP front page (cache miss then hit)..."
