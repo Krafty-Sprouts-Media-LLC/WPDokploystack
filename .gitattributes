@@ -1,0 +1,5 @@
+# Force LF line endings for scripts that run inside Linux containers,
+# regardless of the checkout platform's core.autocrlf setting. A CRLF
+# shebang line (`#!/bin/bash\r`) fails to exec inside the container with
+# a misleading "no such file or directory" error.
+*.sh text eol=lf
